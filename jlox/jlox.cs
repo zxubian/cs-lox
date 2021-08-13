@@ -7,8 +7,11 @@ namespace jlox
     
     public class jlox
     {
-        private static bool hadError = false;
+        private static readonly Interpreter interpreter = new Interpreter();
+        private static bool hadError;
+        private static bool hadRuntimeError;
 
+        /*
         public static void Main()
         {
             var expr = new Expr.Binary
@@ -23,8 +26,9 @@ namespace jlox
             );
             Console.WriteLine(new PrinterVisitor().Print(expr));
         }
+        */
         
-        /*public static int Main(string[] args)
+        public static int Main(string[] args)
         {
             if (args.Length > 1)
             {
@@ -41,7 +45,6 @@ namespace jlox
             }
             return 0;
         }
-        */
 
         private static void RunFile(string path)
         {
@@ -50,6 +53,11 @@ namespace jlox
             if (hadError)
             {
                 Environment.Exit(65);
+            }
+
+            if (hadRuntimeError)
+            {
+                Environment.Exit(70);
             }
         }
 
@@ -64,6 +72,7 @@ namespace jlox
                 }
                 Run(line);
                 hadError = false;
+                hadRuntimeError = false;
             }
         }
 
@@ -71,9 +80,10 @@ namespace jlox
         {
             var scanner = new Scanner(source);
             var tokens = scanner.ScanTokens();
-            foreach (var token in tokens)
+            var parser = new parser
+            if (hadError)
             {
-                Console.WriteLine(token.ToString());
+                return;
             }
         }
 
@@ -88,5 +98,10 @@ namespace jlox
             hadError = true;
         }
 
+        public static void RuntimeError(RuntimeError runtimeError)
+        {
+            Console.WriteLine($"{runtimeError.Message}\n[line {runtimeError.Token.line}]"):;
+            hadRuntimeError = true;
+        }
     }
 }
