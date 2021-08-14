@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace jlox
+namespace cslox
 {
     public class GenerateAst
     {
@@ -34,7 +34,7 @@ namespace jlox
                 writer.WriteLine("using System;");
                 writer.WriteLine("using System.Collections.Generic;");
                 writer.WriteLine();
-                writer.WriteLine("namespace jlox");
+                writer.WriteLine("namespace cs-lox");
                 writer.WriteLine("{");
                 writer.WriteLine();
                 writer.WriteLine($"\tpublic abstract class {baseName}");

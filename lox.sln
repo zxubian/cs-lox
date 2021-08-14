@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jlox", "jlox\jlox.csproj", "{49F6D7CA-9074-4B22-8832-F6CF31B21080}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-lox", "cs-lox\cs-lox.csproj", "{49F6D7CA-9074-4B22-8832-F6CF31B21080}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateAst", "GenerateAst\GenerateAst.csproj", "{017000FA-E42D-4176-9765-4ABBE3D98C12}"
 EndProject

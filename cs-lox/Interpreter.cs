@@ -2,7 +2,7 @@ using System;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
-namespace jlox
+namespace cslox
 {
     public class Interpreter: Expr.IVisitor<object>
     {

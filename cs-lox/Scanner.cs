@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace jlox
+namespace cslox
 {
     public class Scanner
     {

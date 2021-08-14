@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace jlox
+namespace cslox
 {
     public class PrinterVisitor : Expr.IVisitor<string>
     {

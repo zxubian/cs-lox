@@ -1,6 +1,6 @@
 using System;
 
-namespace jlox
+namespace cslox
 {
     public class Token
     {

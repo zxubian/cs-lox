@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace jlox
+namespace cslox
 {
     public class Parser
     {

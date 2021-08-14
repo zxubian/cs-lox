@@ -1,4 +1,4 @@
-namespace jlox
+namespace cslox
 {
     public enum TokenType
     {

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace jlox
+namespace cslox
 {
     
     public class jlox
@@ -14,7 +14,7 @@ namespace jlox
         {
             if (args.Length > 1)
             {
-                Console.WriteLine("Usage: jlox [script]");
+                Console.WriteLine("Usage: cs-lox [script]");
                 return 64;
             }
             else if (args.Length == 1)

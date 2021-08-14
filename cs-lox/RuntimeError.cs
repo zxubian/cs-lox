@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.ConstrainedExecution;
 
-namespace jlox
+namespace cslox
 {
     public class RuntimeError : Exception
     {
