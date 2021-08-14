@@ -10,24 +10,6 @@ namespace jlox
         private static readonly Interpreter interpreter = new Interpreter();
         private static bool hadError;
         private static bool hadRuntimeError;
-
-        /*
-        public static void Main()
-        {
-            var expr = new Expr.Binary
-            (
-                new Expr.Unary
-                (
-                    new Token(TokenType.MINUS, "-", null, 1), 
-                    new Expr.Literal(123)
-                ),
-                new Token(TokenType.STAR, "*", null, 1), 
-                new Expr.Grouping(new Expr.Literal(45.67))
-            );
-            Console.WriteLine(new PrinterVisitor().Print(expr));
-        }
-        */
-        
         public static int Main(string[] args)
         {
             if (args.Length > 1)
@@ -80,16 +62,30 @@ namespace jlox
         {
             var scanner = new Scanner(source);
             var tokens = scanner.ScanTokens();
-            var parser = new parser
+            var parser = new Parser(tokens);
+            var expression = parser.Parse();
             if (hadError)
             {
                 return;
             }
+            Console.WriteLine(new PrinterVisitor().Print(expression));
         }
 
         public static void Error(int line, string message)
         {
             Report(line, "", message);
+        }
+        
+        public static void Error(Token token, string message)
+        {
+            if (token.type == TokenType.EOF)
+            {
+                Report(token.line, " at end: ", message);
+            }
+            else
+            {
+                Report(token.line, $" at '{token.lexeme}': ", message);
+            }
         }
 
         private static void Report(int line, string where, string message)
@@ -100,7 +96,7 @@ namespace jlox
 
         public static void RuntimeError(RuntimeError runtimeError)
         {
-            Console.WriteLine($"{runtimeError.Message}\n[line {runtimeError.Token.line}]"):;
+            Console.WriteLine($"{runtimeError.Message}\n[line {runtimeError.Token.line}]");
             hadRuntimeError = true;
         }
     }

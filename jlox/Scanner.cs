@@ -15,7 +15,7 @@ namespace jlox
         private int current = 0;
         private int line = 1;
 
-        private bool isAtEnd() => current == sourceLength;
+        private bool isAtEnd() => current == sourceLength - 1;
         
         private static readonly IReadOnlyDictionary<char, TokenType> singleCharacterToTokenType = new Dictionary<char, TokenType>
         {
@@ -26,8 +26,8 @@ namespace jlox
             {',', TokenType.COMMA},
             {'.', TokenType.DOT},
             {'-', TokenType.MINUS},
-            {'+', TokenType.SEMICOLON},
-            {';', TokenType.PLUS},
+            {'+', TokenType.PLUS},
+            {';', TokenType.SEMICOLON},
             {'*', TokenType.STAR}
         };
         
@@ -92,11 +92,11 @@ namespace jlox
         private TokenType? ScanToken()
         {
             var c = source[current];
+            current++;
             if (singleCharacterToTokenType.TryGetValue(c, out var type))
             {
                 return type;
             }
-            current += 1;
             bool Equals(int current, char expected)
             {
                 var next = source[current];
@@ -140,7 +140,7 @@ namespace jlox
                 {
                     current++;
                 }
-                var text = source.Substring(start, current);
+                var text = source.Substring(start, current - start);
                 return 
                     keywords.TryGetValue(text, out var value) ? 
                     value : 
@@ -239,16 +239,17 @@ namespace jlox
             return null;
         }
         
-        private static string GetLexeme(string source, int start, int current) => source.Substring(start, current);   
+        private static string GetLexeme(string source, int start, int current) =>
+            source.Substring(start, current - start);
 
         private static object GetLiteral(string source, int start, int current, TokenType type)
         {
             switch (type)
             {
                 case TokenType.NUMBER:
-                    return double.Parse(source.Substring(start, current));
+                    return double.Parse(source.Substring(start, current - start));
                 case TokenType.STRING:
-                    return source.Substring(++start, --current);
+                    return source.Substring(++start, --current - start);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
