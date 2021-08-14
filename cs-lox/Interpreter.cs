@@ -46,25 +46,26 @@ namespace cslox
 
         private static string Stringify(object obj)
         {
-            if (obj == null)
+            switch (obj)
             {
-                return "nil";
-            }
-
-            if (obj is double objDouble)
-            {
-                var text = objDouble.ToString();
-                if (text.EndsWith(".0"))
+                case null:
+                    return "nil";
+                case double objDouble:
                 {
-                    text = text.Substring(0, text.Length - 2);
+                    var text = objDouble.ToString();
+                    if (text.EndsWith(".0"))
+                    {
+                        text = text.Substring(0, text.Length - 2);
+                    }
+                    return text;
                 }
-                return text;
+                default:
+                    return obj.ToString();
             }
-            return obj.ToString();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Object Evaluate(Expr expr) => expr.Accept(this);
+        private object Evaluate(Expr expr) => expr.Accept(this);
 
         private static bool IsTruthy(object o)
         {
@@ -72,10 +73,7 @@ namespace cslox
             {
                 return !rightBool;
             }
-            else
-            {
-                return true;
-            }
+            return true;
         }
 
         public object VisitBinaryExpr(Expr.Binary expr)
