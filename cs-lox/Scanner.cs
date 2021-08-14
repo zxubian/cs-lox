@@ -15,7 +15,7 @@ namespace cslox
         private int current = 0;
         private int line = 1;
 
-        private bool isAtEnd() => current == sourceLength - 1;
+        private bool isAtEnd() => current == sourceLength;
         
         private static readonly IReadOnlyDictionary<char, TokenType> singleCharacterToTokenType = new Dictionary<char, TokenType>
         {
@@ -88,13 +88,12 @@ namespace cslox
             return tokens;
         }
         
-
         private TokenType? ScanToken()
         {
             var c = source[current];
-            current++;
             if (singleCharacterToTokenType.TryGetValue(c, out var type))
             {
+                current++;
                 return type;
             }
             bool Equals(int current, char expected)
@@ -112,19 +111,21 @@ namespace cslox
                     }
                     current++;
                 }
-                if (isAtEnd())
+                if (!isAtEnd() && Equals(current, '"'))
                 {
-                    jlox.Error(line, "Unterminated string");
+                    current++;
+                    return true;
                 }
-                return !isAtEnd();
+                jlox.Error(line, "Unterminated string");
+                return false;
             }
             void Number(ref int current)
             {
-                while (IsDigit(source[current]))
+                while (!isAtEnd() && IsDigit(source[current]))
                 {
                     current++;
                 }
-                if (source[current] == '.' && IsDigit(source[current + 1]))
+                if (!isAtEnd() && source[current] == '.' && IsDigit(source[current + 1]))
                 {
                     current++;
                     while (IsDigit(source[current]))
@@ -133,10 +134,9 @@ namespace cslox
                     }
                 }
             }
-
             TokenType Identifier(int start, ref int current)
             {
-                while (IsAlphaNumeric(source[current]))
+                while (!isAtEnd() && IsAlphaNumeric(source[current]))
                 {
                     current++;
                 }
@@ -146,6 +146,7 @@ namespace cslox
                     value : 
                     TokenType.IDENTIFIER;
             }
+            current++;
             switch (c)
             {
                 case '!':

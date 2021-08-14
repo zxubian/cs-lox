@@ -129,7 +129,7 @@ namespace cslox
             if (Match(TokenType.LEFT_PAREN))
             {
                 var expr = Expression();
-                Consume(TokenType.RIGHT_PAREN, "Expect '\\' after expression.");
+                Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
                 return new Expr.Grouping(expr);
             }
             throw Error(Peek(), "Expect expression.");

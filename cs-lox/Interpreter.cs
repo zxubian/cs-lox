@@ -13,10 +13,9 @@ namespace cslox
 
         public object VisitGroupingExpr(Expr.Grouping expr)
         {
-            return Evaluate(expr);
+            return Evaluate(expr.expression);
         }
         
-
         public object VisitUnaryExpr(Expr.Unary expr)
         {
             var right = Evaluate((expr.right));

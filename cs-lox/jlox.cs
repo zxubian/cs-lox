@@ -50,7 +50,7 @@ namespace cslox
                 var line = Console.ReadLine();
                 if (string.IsNullOrEmpty(line))
                 {
-                    break;
+                    continue;
                 }
                 Run(line);
                 hadError = false;
@@ -68,7 +68,7 @@ namespace cslox
             {
                 return;
             }
-            Console.WriteLine(new PrinterVisitor().Print(expression));
+            interpreter.Interpret(expression);
         }
 
         public static void Error(int line, string message)
