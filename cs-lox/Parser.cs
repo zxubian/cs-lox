@@ -15,8 +15,11 @@ namespace cslox
         {
             this.tokens = tokens;
         }
+        
         /*
-           expression     → equality ;
+           expression     → comma;
+           comma          → ternary (, ternary)* ;
+           ternary        → equality | (ternary ? ternary : ternary)
            equality       → comparison ( ( "!=" | "==" ) comparison )* ;
            comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
            term           → factor ( ( "-" | "+" ) factor )* ;
@@ -39,8 +42,39 @@ namespace cslox
             }
         }
 
-        // expression     → equality ;
-        private Expr Expression() => Equality();
+        // expression     → comma;
+        private Expr Expression() => Comma();
+
+        // comma          → ternary (, ternary)* ;
+        private Expr Comma()
+        {
+            var expr = Ternary();
+            while (Match(TokenType.COMMA))
+            {
+                var operatorToken = Previous();
+                var right = Ternary();
+                expr = new Expr.Binary(expr, operatorToken, right);
+            }
+            return expr;
+        }
+
+        private Expr Ternary()
+        {
+            var expr = Equality();
+            if (Match(TokenType.QUESTION))
+            {
+                var question = Previous();
+                var mid = Ternary();
+                if (!Match(TokenType.COLON))
+                {
+                    throw Error(Peek(), "Expect ':' for ternary conditional.");
+                }
+                var colon = Previous();
+                var right = Ternary();
+                expr = new Expr.Ternary(expr, question, mid, colon, right);
+            }
+            return expr;
+        }
 
         // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         private Expr Equality()
@@ -59,40 +93,40 @@ namespace cslox
        //comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         private Expr Comparison()
         {
-            var term = Term();
+            var expr = Term();
             while (Match(TokenType.LESS, TokenType.LESS_EQUAL, TokenType.GREATER, TokenType.GREATER_EQUAL))
             {
                 var operatorToken = Previous();
                 var right = Term();
-                term = new Expr.Binary(term, operatorToken, right);
+                expr = new Expr.Binary(expr, operatorToken, right);
             }
-            return term;
+            return expr;
         }
 
         // term           → factor ( ( "-" | "+" ) factor )* ;
         private Expr Term()
         {
-            var factor = Factor();
+            var expr = Factor();
             while (Match(TokenType.MINUS, TokenType.PLUS))
             {
                 var operatorToken = Previous();
                 var right = Factor();
-                factor = new Expr.Binary(factor, operatorToken, right);
+                expr = new Expr.Binary(expr, operatorToken, right);
             }
-            return factor;
+            return expr;
         }
 
         // factor         → unary ( ( "/" | "*" ) unary )* ;
         private Expr Factor()
         {
-            var unary = Unary();
+            var expr = Unary();
             while (Match(TokenType.SLASH, TokenType.STAR))
             {
                 var operatorToken = Previous();
                 var right = Unary();
-                unary = new Expr.Binary(unary, operatorToken, right);
+                expr = new Expr.Binary(expr, operatorToken, right);
             }
-            return unary;
+            return expr;
         }
 
         //unary          → ( "!" | "-" ) unary | primary ;

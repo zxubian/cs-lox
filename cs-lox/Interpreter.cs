@@ -18,7 +18,7 @@ namespace cslox
         
         public object VisitUnaryExpr(Expr.Unary expr)
         {
-            var right = Evaluate((expr.right));
+            var right = Evaluate(expr.right);
             switch (expr.operatorToken.type)
             {
                 case TokenType.MINUS:
@@ -26,6 +26,18 @@ namespace cslox
                     return -(double) right;
                 case TokenType.BANG:
                     return !IsTruthy(right);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public object VisitTernaryExpr(Expr.Ternary expr)
+        {
+            var left = Evaluate(expr.left);
+            switch (expr.firstOperator.type)
+            {
+                case TokenType.QUESTION when expr.secondOperator.type == TokenType.COLON:
+                    return IsTruthy(left) ? Evaluate(expr.mid) : Evaluate(expr.right);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -116,6 +128,8 @@ namespace cslox
                 case TokenType.EQUAL_EQUAL:
                     CheckNumberOperands(expr.operatorToken, left, right);
                     return left.Equals(right);
+                case TokenType.COMMA:
+                    return right;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

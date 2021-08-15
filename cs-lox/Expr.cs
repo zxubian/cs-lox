@@ -12,6 +12,7 @@ namespace cslox
 			 T VisitGroupingExpr(Grouping expr);
 			 T VisitLiteralExpr(Literal expr);
 			 T VisitUnaryExpr(Unary expr);
+			 T VisitTernaryExpr(Ternary expr);
 		}
 		public class Binary : Expr
 		{
@@ -58,6 +59,24 @@ namespace cslox
 			public readonly Token operatorToken;
 			public readonly Expr right;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitUnaryExpr(this);
+		}
+		public class Ternary : Expr
+		{
+			public Ternary (Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right)
+			{
+			this.left = left;
+			this.firstOperator = firstOperator;
+			this.mid = mid;
+			this.secondOperator = secondOperator;
+			this.right = right;
+			}
+
+			public readonly Expr left;
+			public readonly Token firstOperator;
+			public readonly Expr mid;
+			public readonly Token secondOperator;
+			public readonly Expr right;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitTernaryExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

@@ -40,5 +40,11 @@ namespace cslox
         {
             return Parenthesize(expr.operatorToken.lexeme, expr.right);
         }
+
+        public string VisitTernaryExpr(Expr.Ternary expr)
+        {
+            return Parenthesize(
+                $"{Parenthesize(expr.left.ToString())} ? {Parenthesize(expr.mid.ToString())} : {Parenthesize(expr.right.ToString())}");
+        }
     }
 }

@@ -16,12 +16,13 @@ namespace cslox
                 return 64;
             }
             var outputDir = args[0];
-            DefineAst(outputDir, "Expr", new List<string>()
+            DefineAst(outputDir, "Expr", new List<string>
             {
                 "Binary: Expr left, Token operatorToken, Expr right",
                 "Grouping: Expr expression",
                 "Literal: Object value",
-                "Unary: Token operatorToken, Expr right"
+                "Unary: Token operatorToken, Expr right",
+                "Ternary: Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right"
             });
             return 0;
         }
@@ -34,7 +35,7 @@ namespace cslox
                 writer.WriteLine("using System;");
                 writer.WriteLine("using System.Collections.Generic;");
                 writer.WriteLine();
-                writer.WriteLine("namespace cs-lox");
+                writer.WriteLine("namespace cslox");
                 writer.WriteLine("{");
                 writer.WriteLine();
                 writer.WriteLine($"\tpublic abstract class {baseName}");

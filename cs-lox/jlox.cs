@@ -10,6 +10,7 @@ namespace cslox
         private static readonly Interpreter interpreter = new Interpreter();
         private static bool hadError;
         private static bool hadRuntimeError;
+        
         public static int Main(string[] args)
         {
             if (args.Length > 1)
@@ -17,7 +18,7 @@ namespace cslox
                 Console.WriteLine("Usage: cs-lox [script]");
                 return 64;
             }
-            else if (args.Length == 1)
+            if (args.Length == 1)
             {
                 RunFile(args[0]);
             }

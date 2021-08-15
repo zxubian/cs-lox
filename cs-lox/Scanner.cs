@@ -28,7 +28,9 @@ namespace cslox
             {'-', TokenType.MINUS},
             {'+', TokenType.PLUS},
             {';', TokenType.SEMICOLON},
-            {'*', TokenType.STAR}
+            {'*', TokenType.STAR},
+            {'?', TokenType.QUESTION},
+            {':', TokenType.COLON}
         };
         
         private static readonly IReadOnlyDictionary<string, TokenType> keywords = new Dictionary<string, TokenType>()
