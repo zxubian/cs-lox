@@ -83,7 +83,11 @@ namespace cslox
         {
             if (o != null && o is bool rightBool)
             {
-                return !rightBool;
+                return rightBool;
+            }
+            if (o == null)
+            {
+                return false;
             }
             return true;
         }
