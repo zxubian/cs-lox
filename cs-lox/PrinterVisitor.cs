@@ -44,7 +44,7 @@ namespace cslox
         public string VisitTernaryExpr(Expr.Ternary expr)
         {
             return Parenthesize(
-                $"{Parenthesize(expr.left.ToString())} ? {Parenthesize(expr.mid.ToString())} : {Parenthesize(expr.right.ToString())}");
+                $"{Print(expr.left)} ? {Print(expr.mid)} : {Print(expr.right)}");
         }
     }
 }
