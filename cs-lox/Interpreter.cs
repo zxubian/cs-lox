@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
@@ -113,6 +114,7 @@ namespace cslox
                     return (double)left - (double)right;
                 case TokenType.SLASH:
                     CheckNumberOperands(expr.operatorToken, left, right);
+                    CheckNotZero(expr.operatorToken, right);
                     return (double)left / (double)right;
                 case TokenType.STAR:
                     CheckNumberOperands(expr.operatorToken, left, right);
@@ -155,6 +157,16 @@ namespace cslox
                 return;
             }
             throw new RuntimeError(operatorToken, "Operand must be a number");
+        }
+        
+        private static void CheckNotZero(Token operatorToken, params object[] operands)
+        {
+            if (operands.All(operand => Math.Abs((double)operand) > double.Epsilon))
+            {
+                return;
+            }
+            var message = operatorToken.type == TokenType.SLASH ? "Division by zero" : "Operand cannot be zero";
+            throw new RuntimeError(operatorToken, message);
         }
     }
     
