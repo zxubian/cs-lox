@@ -174,11 +174,11 @@ namespace cslox
                 initializer = ExpressionStatement();
             }
             Expr condition = null;
-            if (!Match(TokenType.SEMICOLON))
+            if (!Check(TokenType.SEMICOLON))
             {
                 condition = Expression();
             }
-
+            Consume(TokenType.SEMICOLON, "Expected ';' after 'for' condition");
             Expr increment = null;
             if(!Check(TokenType.RIGHT_PAREN))
             {

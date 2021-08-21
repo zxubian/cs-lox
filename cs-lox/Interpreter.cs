@@ -122,7 +122,7 @@ namespace cslox
             return true;
         }
 
-        // variable assignmnent
+        // variable assignment
         public object VisitAssignExpr(Expr.Assign expr)
         {
             var value = Evaluate(expr.value);
@@ -261,7 +261,7 @@ namespace cslox
 
         public Unit VisitIfStmt(Stmt.If stmt)
         {
-            if (IsTruthy(stmt.condition))
+            if (IsTruthy(Evaluate(stmt.condition)))
             {
                 Execute(stmt.thenBranch);
             }
