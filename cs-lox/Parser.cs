@@ -111,8 +111,11 @@ namespace cslox
         private Stmt ExpressionStatement()
         {
             var expr = Expression();
-            Consume(TokenType.SEMICOLON, "; expected after statement");
-            return new Stmt.Expression(expr);
+            if (Match(TokenType.SEMICOLON))
+            {
+                return new Stmt.Expression(expr);
+            }
+            return new Stmt.Print(expr);
         }
 
         private Stmt Block()
