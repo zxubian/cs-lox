@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml.Schema;
 using cslox.UtilityTypes;
 using Environment = clox.Environment;
 
@@ -124,6 +125,7 @@ namespace cslox
             switch (expr.operatorToken.type)
             {
                 case TokenType.PLUS:
+                {
                     switch (left)
                     {
                         case string leftString when right is string rightString:
@@ -133,6 +135,7 @@ namespace cslox
                         default:
                             throw new RuntimeError(expr.operatorToken, "Operands must be two numbers or two strings");
                     }
+                }
                 case TokenType.MINUS:
                     CheckNumberOperands(expr.operatorToken, left, right);
                     return (double)left - (double)right;
@@ -156,8 +159,15 @@ namespace cslox
                     CheckNumberOperands(expr.operatorToken, left, right);
                     return (double)left <= (double)right;
                 case TokenType.EQUAL_EQUAL:
-                    CheckNumberOperands(expr.operatorToken, left, right);
-                    return left.Equals(right);
+                    if (left is double leftDouble1 && right is double rightDouble1)
+                    {
+                        return Math.Abs(leftDouble1 - rightDouble1) < Double.Epsilon;
+                    }
+                    if (left == null || right == null)
+                    {
+                        return left == right;
+                    }
+                    throw new RuntimeError(expr.operatorToken, "Operands must both be numbers, or at least one should be nil.");
                 case TokenType.COMMA:
                     return right;
                 default:
@@ -208,12 +218,15 @@ namespace cslox
         // variable declaration
         public Unit VisitVarStmt(Stmt.Var stmt)
         {
-            object value = null;
             if (stmt.initializer != null)
             {
-                value = Evaluate(stmt.initializer);
+                var value = Evaluate(stmt.initializer);
+                environment.Define(stmt.name, value);
             }
-            environment.Define(stmt.name, value);
+            else
+            {
+                environment.Define(stmt.name);
+            }
             return Unit.Default;
         }
 
