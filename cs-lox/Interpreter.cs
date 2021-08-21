@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using cslox.UtilityTypes;
+using Environment = clox.Environment;
 
 namespace cslox
 {
-    public class Interpreter: Expr.IVisitor<object>
+    public class Interpreter: Expr.IVisitor<object>, Stmt.IVisitor<Unit>
     {
+        private Environment environment = new Environment();
         public object VisitLiteralExpr(Expr.Literal expr)
         {
             return expr.value;
@@ -44,12 +47,20 @@ namespace cslox
             }
         }
 
-        public void Interpret(Expr expression)
+        // variable evaluation
+        public object VisitVariableExpr(Expr.Variable expr)
+        {
+            return environment.Get(expr.name);
+        }
+
+        public void Interpret(List<Stmt> statements)
         {
             try
             {
-                object value = Evaluate(expression);
-                Console.WriteLine(value);
+                foreach (var statement in statements)
+                {
+                    Execute(statement);
+                }
             }
             catch (RuntimeError e)
             {
@@ -57,6 +68,11 @@ namespace cslox
             }
         }
 
+        private void Execute(Stmt statement)
+        {
+            statement.Accept(this);
+        }
+        
         private static string Stringify(object obj)
         {
             switch (obj)
@@ -91,6 +107,14 @@ namespace cslox
                 return false;
             }
             return true;
+        }
+
+        // variable assignmnent
+        public object VisitAssignExpr(Expr.Assign expr)
+        {
+            var value = Evaluate(expr.value);
+            environment.Assign(expr.name, value);
+            return value;
         }
 
         public object VisitBinaryExpr(Expr.Binary expr)
@@ -167,6 +191,47 @@ namespace cslox
             }
             var message = operatorToken.type == TokenType.SLASH ? "Division by zero" : "Operand cannot be zero";
             throw new RuntimeError(operatorToken, message);
+        }
+
+        public Unit VisitExpressionStmt(Stmt.Expression stmt)
+        {
+            Evaluate(stmt.expression);
+            return Unit.Default;
+        }
+
+        public Unit VisitPrintStmt(Stmt.Print stmt)
+        {
+            Console.WriteLine(Stringify(Evaluate(stmt.expression)));
+            return Unit.Default;
+        }
+
+        // variable declaration
+        public Unit VisitVarStmt(Stmt.Var stmt)
+        {
+            object value = null;
+            if (stmt.initializer != null)
+            {
+                value = Evaluate(stmt.initializer);
+            }
+            environment.Define(stmt.name.lexeme, value);
+            return Unit.Default;
+        }
+
+        public Unit VisitBlockStmt(Stmt.Block stmt)
+        {
+            environment = new Environment(environment);
+            try
+            {
+                foreach (var statement in stmt.statements)
+                {
+                    Execute(statement);
+                }
+            }
+            finally
+            {
+                environment = environment.Enclosing;
+            }
+            return Unit.Default;
         }
     }
     

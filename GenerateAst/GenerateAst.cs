@@ -18,11 +18,20 @@ namespace cslox
             var outputDir = args[0];
             DefineAst(outputDir, "Expr", new List<string>
             {
+                "Assign: Token name, Expr value",
                 "Binary: Expr left, Token operatorToken, Expr right",
                 "Grouping: Expr expression",
                 "Literal: Object value",
                 "Unary: Token operatorToken, Expr right",
-                "Ternary: Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right"
+                "Ternary: Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right",
+                "Variable: Token name"
+            });
+            DefineAst(outputDir, "Stmt", new List<string>
+            {
+                "Expression: Expr expression",
+                "Print: Expr expression",
+                "Var: Token name, Expr initializer",
+                "Block: List<Stmt> statements"
             });
             return 0;
         }

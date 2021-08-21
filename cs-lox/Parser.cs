@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -17,8 +18,17 @@ namespace cslox
         }
         
         /*
+           program        → declaration* EOF ;
+           declaration    → varDecl | statement ;
+           varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
+           statement      → exprStmt | printStmt ;
+           statement      → exprStmt | printStmt | block;
+           exprStmt       → expression ";" ;
+           printStmt      → "print" expression ";" ; 
+           block          → "{" declaration* "}"; 
            expression     → comma;
-           comma          → ternary (, ternary)* ;
+           comma          → assignment (, assignment)*;
+           assignment     → IDENTIFIER "=" assignment | ternary;
            ternary        → equality | (ternary ? ternary : ternary)
            equality       → comparison ( ( "!=" | "==" ) comparison )* ;
            comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -26,20 +36,94 @@ namespace cslox
            factor         → unary ( ( "/" | "*" ) unary )* ;
            unary          → ( "!" | "-" ) unary
                           | primary ;
-           primary        → NUMBER | STRING | "true" | "false" | "nil"
-                          | "(" expression ")" ; 
+           primary        →  | "true" | "false" | "nil"
+                             | NUMBER | STRING 
+                             | "(" expression ")" 
+                             | IDENTIFIER ; 
          */
 
-        public Expr Parse()
+        public List<Stmt> Parse()
+        {
+            var statements = new List<Stmt>();
+            while (!IsAtEnd())
+            {
+                statements.Add(Declaration());
+            }
+            return statements;
+        }
+
+        // declaration    → varDecl | statement ;
+        private Stmt Declaration()
         {
             try
             {
-                return Expression();
+                if (Match(TokenType.VAR))
+                {
+                    return VarDeclaration();
+                }
+
+                return Statement();
             }
             catch (ParseError)
             {
+                Synchronize();
                 return null;
             }
+        }
+        
+        // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
+        private Stmt VarDeclaration()
+        {
+            var identifier = Consume(TokenType.IDENTIFIER, "Variable name expected");
+            Expr initializer = null;
+            if (Match(TokenType.EQUAL))
+            {
+                initializer = Expression();
+            }
+            Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+            return new Stmt.Var(identifier, initializer);
+        }
+        
+        // statement      → exprStmt | printStmt ;
+        private Stmt Statement()
+        {
+            if (Match(TokenType.PRINT))
+            {
+                return PrintStatement();
+            }
+
+            if (Match(TokenType.LEFT_BRACE))
+            {
+                return Block();
+            }
+            return ExpressionStatement();
+        }
+        
+        // printStmt      → "print" expression ";" ; 
+        private Stmt PrintStatement()
+        {
+            var expression = Expression();
+            Consume(TokenType.SEMICOLON, "; expected after statement");
+            return new Stmt.Print(expression);
+        }
+
+        // exprStmt       → expression ";" ;
+        private Stmt ExpressionStatement()
+        {
+            var expr = Expression();
+            Consume(TokenType.SEMICOLON, "; expected after statement");
+            return new Stmt.Expression(expr);
+        }
+
+        private Stmt Block()
+        {
+            var statements = new List<Stmt>();
+            while (!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
+            {
+                statements.Add(Declaration());
+            }
+            Consume(TokenType.RIGHT_BRACE, "Expect '}' after block");
+            return new Stmt.Block(statements);
         }
 
         // expression     → comma;
@@ -48,16 +132,34 @@ namespace cslox
         // comma          → ternary (, ternary)* ;
         private Expr Comma()
         {
-            var expr = Ternary();
+            var expr = Assignment();
             while (Match(TokenType.COMMA))
             {
                 var operatorToken = Previous();
-                var right = Ternary();
+                var right = Assignment();
                 expr = new Expr.Binary(expr, operatorToken, right);
             }
             return expr;
         }
 
+        // assignment     → IDENTIFIER "=" assignment | ternary;
+        private Expr Assignment()
+        {
+            var expr = Ternary();
+            if (Match(TokenType.EQUAL))
+            {
+                var equals = Previous();
+                if (expr is Expr.Variable variable)
+                {
+                    var name = variable.name;
+                    return new Expr.Assign(name, Assignment());
+                }
+                Error(equals, "Invalid assignment target.");
+            }
+            return expr;
+        }
+
+        // ternary        → equality | (ternary ? ternary : ternary)
         private Expr Ternary()
         {
             var expr = Equality();
@@ -165,6 +267,10 @@ namespace cslox
                 var expr = Expression();
                 Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
                 return new Expr.Grouping(expr);
+            }
+            if (Match(TokenType.IDENTIFIER))
+            {
+                return new Expr.Variable(Previous());
             }
             throw Error(Peek(), "Expect expression.");
         }

@@ -8,11 +8,25 @@ namespace cslox
 	{
 		public interface IVisitor<T>
 		{
+			 T VisitAssignExpr(Assign expr);
 			 T VisitBinaryExpr(Binary expr);
 			 T VisitGroupingExpr(Grouping expr);
 			 T VisitLiteralExpr(Literal expr);
 			 T VisitUnaryExpr(Unary expr);
 			 T VisitTernaryExpr(Ternary expr);
+			 T VisitVariableExpr(Variable expr);
+		}
+		public class Assign : Expr
+		{
+			public Assign (Token name, Expr value)
+			{
+			this.name = name;
+			this.value = value;
+			}
+
+			public readonly Token name;
+			public readonly Expr value;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitAssignExpr(this);
 		}
 		public class Binary : Expr
 		{
@@ -77,6 +91,16 @@ namespace cslox
 			public readonly Token secondOperator;
 			public readonly Expr right;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitTernaryExpr(this);
+		}
+		public class Variable : Expr
+		{
+			public Variable (Token name)
+			{
+			this.name = name;
+			}
+
+			public readonly Token name;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitVariableExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 
 namespace cslox
@@ -21,6 +22,12 @@ namespace cslox
             builder.Append(")");
             return builder.ToString();
         }
+
+        public string VisitAssignExpr(Expr.Assign expr)
+        {
+            return $"{expr.name.lexeme} -> {Print(expr.value)}";
+        }
+
         public string VisitBinaryExpr(Expr.Binary expr)
         {
             return Parenthesize(expr.operatorToken.lexeme, expr.left, expr.right);
@@ -45,6 +52,11 @@ namespace cslox
         {
             return Parenthesize(
                 $"{Print(expr.left)} ? {Print(expr.mid)} : {Print(expr.right)}");
+        }
+
+        public string VisitVariableExpr(Expr.Variable expr)
+        {
+            throw new NotImplementedException();
         }
     }
 }
