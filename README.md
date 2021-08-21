@@ -30,7 +30,7 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
  print a == c;
  >> False
  ```
- - Other features: ternary conditional (a ? b : c), comma operator support
+ - Other features: ternary conditional (a ? b : c), comma operator support, breaking out of loops, C-style block comments (/*...*/)
  
 # Implementation Notes:
 
