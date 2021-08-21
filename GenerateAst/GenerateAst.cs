@@ -33,7 +33,8 @@ namespace cslox
                 "Var: Token name, Expr initializer",
                 "Block: List<Stmt> statements",
                 "If: Expr condition, Stmt thenBranch, Stmt elseBranch",
-                "While: Expr condition, Stmt body"
+                "While: Expr condition, Stmt body",
+                "Break:"
             });
             return 0;
         }
@@ -56,7 +57,7 @@ namespace cslox
                 {
                     var split = type.Split(":");
                     var className = split[0].Trim();
-                    var fields = split[1].Trim();
+                    var fields = split.Length > 1 && !string.IsNullOrEmpty(split[1])? split[1].Trim() : null;
                     DefineType(writer, baseName, className, fields);
                 }
                 writer.WriteLine();
@@ -83,20 +84,28 @@ namespace cslox
             writer.WriteLine($"\t\tpublic class {classname} : {baseName}");
             writer.WriteLine("\t\t{");
             // constructor
-            writer.WriteLine($"\t\t\tpublic {classname} ({fieldList})");
-            writer.WriteLine("\t\t\t{");
-            var fields = fieldList.Split(", ");
-            foreach (var field in fields)
+            if (fieldList != null)
             {
-                var name = field.Split(" ")[1];
-                writer.WriteLine($"\t\t\tthis.{name} = {name};");
+                writer.WriteLine($"\t\t\tpublic {classname} ({fieldList})");
+                writer.WriteLine("\t\t\t{");
+                var fields = fieldList.Split(", ");
+                foreach (var field in fields)
+                {
+                    var name = field.Split(" ")[1];
+                    writer.WriteLine($"\t\t\tthis.{name} = {name};");
+                }
+                writer.WriteLine("\t\t\t}");
+                writer.WriteLine();
+                // Fields
+                foreach (var field in fields)
+                {
+                    writer.WriteLine($"\t\t\tpublic readonly {field};");
+                }
             }
-            writer.WriteLine("\t\t\t}");
-            writer.WriteLine();
-            // Fields
-            foreach (var field in fields)
+            else
             {
-                writer.WriteLine($"\t\t\tpublic readonly {field};");
+                writer.WriteLine($"\t\t\tpublic {classname} () ");
+                writer.WriteLine("{}");
             }
             // Visitor
             writer.WriteLine($"\t\t\tpublic override T Accept<T>(IVisitor<T> visitor) => visitor.Visit{classname}{baseName}(this);");

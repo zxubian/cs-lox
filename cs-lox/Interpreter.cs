@@ -276,9 +276,21 @@ namespace cslox
         {
             while (IsTruthy(Evaluate(stmt.condition)))
             {
-                Execute(stmt.body);
+                try
+                {
+                    Execute(stmt.body);
+                }
+                catch (BreakException)
+                {
+                    break;
+                }
             }
             return Unit.Default;
+        }
+
+        public Unit VisitBreakStmt(Stmt.Break stmt)
+        {
+            throw new BreakException();
         }
     }
     

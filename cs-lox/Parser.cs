@@ -23,12 +23,14 @@ namespace cslox
                           | block
                           | ifStmt
                           | whileStmt
-                          | forStmt;
+                          | forStmt
+                          | breakStmt;
            exprStmt       → expression ";" ;
            printStmt      → "print" expression ";" ; 
            ifStmt         → "if" "("expression ")" statement ("else" statement)?;
            whileStmt      → "while" "(" expression ")" statement;
-           forStmt        → "for "(" ( varDecl | exprStmt) (expression)? ";" (expression)? ")" statement ;
+           forStmt        → "for "(" ( varDecl | exprStmt) (expression)? ";" (expression)? ")" statement;
+           breakStatement → "break"";" 
            block          → "{" declaration* "}"; 
            expression     → comma;
            comma          → assignment (, assignment)*;
@@ -113,6 +115,10 @@ namespace cslox
             {
                 return Block();
             }
+            if (Match(TokenType.BREAK))
+            {
+                return BreakStatement();
+            }
             return ExpressionStatement();
         }
         
@@ -194,6 +200,12 @@ namespace cslox
                 body = new Stmt.Block(new List<Stmt>(){initializer, body});
             }
             return body;
+        }
+
+        private Stmt BreakStatement()
+        {
+            Consume(TokenType.SEMICOLON, "Expected ';' after 'break';");
+            return new Stmt.Break();   
         }
         
         // exprStmt       → expression ";" ;

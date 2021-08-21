@@ -14,6 +14,7 @@ namespace cslox
 			 T VisitBlockStmt(Block stmt);
 			 T VisitIfStmt(If stmt);
 			 T VisitWhileStmt(While stmt);
+			 T VisitBreakStmt(Break stmt);
 		}
 		public class Expression : Stmt
 		{
@@ -82,6 +83,12 @@ namespace cslox
 			public readonly Expr condition;
 			public readonly Stmt body;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitWhileStmt(this);
+		}
+		public class Break : Stmt
+		{
+			public Break () 
+{}
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitBreakStmt(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);
