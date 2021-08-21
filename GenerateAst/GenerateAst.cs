@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace cslox
 {
@@ -20,6 +19,7 @@ namespace cslox
             {
                 "Assign: Token name, Expr value",
                 "Binary: Expr left, Token operatorToken, Expr right",
+                "Logic: Expr left, Token operatorToken, Expr right",
                 "Grouping: Expr expression",
                 "Literal: Object value",
                 "Unary: Token operatorToken, Expr right",
@@ -31,7 +31,9 @@ namespace cslox
                 "Expression: Expr expression",
                 "Print: Expr expression",
                 "Var: Token name, Expr initializer",
-                "Block: List<Stmt> statements"
+                "Block: List<Stmt> statements",
+                "If: Expr condition, Stmt thenBranch, Stmt elseBranch",
+                "While: Expr condition, Stmt body"
             });
             return 0;
         }

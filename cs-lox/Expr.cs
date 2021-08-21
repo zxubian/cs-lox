@@ -10,6 +10,7 @@ namespace cslox
 		{
 			 T VisitAssignExpr(Assign expr);
 			 T VisitBinaryExpr(Binary expr);
+			 T VisitLogicExpr(Logic expr);
 			 T VisitGroupingExpr(Grouping expr);
 			 T VisitLiteralExpr(Literal expr);
 			 T VisitUnaryExpr(Unary expr);
@@ -41,6 +42,20 @@ namespace cslox
 			public readonly Token operatorToken;
 			public readonly Expr right;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitBinaryExpr(this);
+		}
+		public class Logic : Expr
+		{
+			public Logic (Expr left, Token operatorToken, Expr right)
+			{
+			this.left = left;
+			this.operatorToken = operatorToken;
+			this.right = right;
+			}
+
+			public readonly Expr left;
+			public readonly Token operatorToken;
+			public readonly Expr right;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitLogicExpr(this);
 		}
 		public class Grouping : Expr
 		{

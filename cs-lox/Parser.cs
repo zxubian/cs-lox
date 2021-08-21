@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace cslox
 {
@@ -21,25 +18,34 @@ namespace cslox
            program        → declaration* EOF ;
            declaration    → varDecl | statement ;
            varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
-           statement      → exprStmt | printStmt ;
-           statement      → exprStmt | printStmt | block;
+           statement      → exprStmt | 
+                          | printStmt 
+                          | block
+                          | ifStmt
+                          | whileStmt
+                          | forStmt;
            exprStmt       → expression ";" ;
            printStmt      → "print" expression ";" ; 
+           ifStmt         → "if" "("expression ")" statement ("else" statement)?;
+           whileStmt      → "while" "(" expression ")" statement;
+           forStmt        → "for "(" ( varDecl | exprStmt) (expression)? ";" (expression)? ")" statement ;
            block          → "{" declaration* "}"; 
            expression     → comma;
            comma          → assignment (, assignment)*;
            assignment     → IDENTIFIER "=" assignment | ternary;
-           ternary        → equality | (ternary "?" ternary ":" ternary)
+           ternary        → logic_or | (ternary "?" ternary ":" ternary)
+           logic_or       → logic_and (or logic_and )*;
+           logic_and      → equality (and equality)*:
            equality       → comparison ( ( "!=" | "==" ) comparison )* ;
            comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
            term           → factor ( ( "-" | "+" ) factor )* ;
            factor         → unary ( ( "/" | "*" ) unary )* ;
            unary          → ( "!" | "-" ) unary
                           | primary ;
-           primary        →  | "true" | "false" | "nil"
-                             | NUMBER | STRING 
-                             | "(" expression ")" 
-                             | IDENTIFIER ; 
+           primary        →   "true" | "false" | "nil"
+                          | NUMBER | STRING 
+                          | "(" expression ")" 
+                          | IDENTIFIER ; 
          */
 
         public List<Stmt> Parse()
@@ -91,7 +97,18 @@ namespace cslox
             {
                 return PrintStatement();
             }
-
+            if (Match(TokenType.IF))
+            {
+                return IfStatement();
+            }
+            if (Match(TokenType.WHILE))
+            {
+                return WhileStatement();
+            }
+            if (Match(TokenType.FOR))
+            {
+                return ForStatement();
+            }
             if (Match(TokenType.LEFT_BRACE))
             {
                 return Block();
@@ -107,6 +124,78 @@ namespace cslox
             return new Stmt.Print(expression);
         }
 
+        //  ifStmt         → "if" "("expression ")" statement ("else" statement)?;
+
+        private Stmt IfStatement()
+        {
+            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'");
+            var condition = Expression();
+            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'if' condition");
+            var thenBranch = Statement();
+            Stmt elseBranch = null;
+            if (Match(TokenType.ELSE))
+            {
+                elseBranch = Statement();
+            }
+            return new Stmt.If(condition, thenBranch, elseBranch);
+        }
+        
+        //  whileStmt         → "while" "("expression ")" statement;
+        private Stmt WhileStatement()
+        {
+            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'");
+            var condition = Expression();
+            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'while' condition");
+            var body = Statement();
+            return new Stmt.While(condition, body);
+        }
+        
+        // forStmt        → "for "(" ( varDecl | exprStmt) (expression)? ";" (expression)? ")" statement ;
+        private Stmt ForStatement()
+        {
+            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'for'");
+            Stmt initializer;
+            if (Match(TokenType.SEMICOLON))
+            {
+                initializer = null;
+            }
+            else if (Match(TokenType.VAR))
+            {
+                initializer = VarDeclaration();
+            }
+            else
+            {
+                initializer = ExpressionStatement();
+            }
+            Expr condition = null;
+            if (!Match(TokenType.SEMICOLON))
+            {
+                condition = Expression();
+            }
+
+            Expr increment = null;
+            if(!Check(TokenType.RIGHT_PAREN))
+            {
+                increment = Expression();
+            }
+            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'for' expression");
+            var body = Statement();
+            if (increment != null)
+            {
+                body = new Stmt.Block(new List<Stmt>(){body, new Stmt.Expression(increment)});
+            }
+            if (condition == null)
+            {
+                condition = new Expr.Literal(true);
+            }
+            body = new Stmt.While(condition, body);
+            if (initializer != null)
+            {
+                body = new Stmt.Block(new List<Stmt>(){initializer, body});
+            }
+            return body;
+        }
+        
         // exprStmt       → expression ";" ;
         private Stmt ExpressionStatement()
         {
@@ -132,7 +221,7 @@ namespace cslox
         // expression     → comma;
         private Expr Expression() => Comma();
 
-        // comma          → ternary (, ternary)* ;
+        // comma          → assignment (, assignment)* ;
         private Expr Comma()
         {
             var expr = Assignment();
@@ -165,7 +254,7 @@ namespace cslox
         // ternary        → equality | (ternary ? ternary : ternary)
         private Expr Ternary()
         {
-            var expr = Equality();
+            var expr = LogicOr();
             if (Match(TokenType.QUESTION))
             {
                 var question = Previous();
@@ -177,6 +266,28 @@ namespace cslox
                 var colon = Previous();
                 var right = Ternary();
                 expr = new Expr.Ternary(expr, question, mid, colon, right);
+            }
+            return expr;
+        }
+
+        // logic_or       → logic_and (or logic_and )*;
+        private Expr LogicOr()
+        {
+            var expr = LogicAnd();
+            while (Match(TokenType.OR))
+            {
+                expr = new Expr.Logic(expr, Previous(), LogicAnd());
+            }
+            return expr;
+        }
+
+        // logic_and      → equality (and equality)*:
+        private Expr LogicAnd()
+        {
+            var expr = Equality();
+            while (Match(TokenType.AND))
+            {
+                expr = new Expr.Logic(expr, Previous(), Equality());
             }
             return expr;
         }
@@ -195,7 +306,7 @@ namespace cslox
             return expr;
         }
 
-       //comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+        //comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         private Expr Comparison()
         {
             var expr = Term();

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Xml.Schema;
 using cslox.UtilityTypes;
 using Environment = clox.Environment;
 
@@ -14,6 +13,19 @@ namespace cslox
         public object VisitLiteralExpr(Expr.Literal expr)
         {
             return expr.value;
+        }
+
+        public object VisitLogicExpr(Expr.Logic expr)
+        {
+            switch (expr.operatorToken.type)
+            {
+                case TokenType.OR:
+                    return IsTruthy(Evaluate(expr.left)) || IsTruthy(Evaluate(expr.right));
+                case TokenType.AND:
+                    return IsTruthy(Evaluate(expr.left)) && IsTruthy(Evaluate(expr.right));
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public object VisitGroupingExpr(Expr.Grouping expr)
@@ -38,10 +50,10 @@ namespace cslox
 
         public object VisitTernaryExpr(Expr.Ternary expr)
         {
-            var left = Evaluate(expr.left);
             switch (expr.firstOperator.type)
             {
                 case TokenType.QUESTION when expr.secondOperator.type == TokenType.COLON:
+                    var left = Evaluate(expr.left);
                     return IsTruthy(left) ? Evaluate(expr.mid) : Evaluate(expr.right);
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -243,6 +255,28 @@ namespace cslox
             finally
             {
                 environment = environment.Enclosing;
+            }
+            return Unit.Default;
+        }
+
+        public Unit VisitIfStmt(Stmt.If stmt)
+        {
+            if (IsTruthy(stmt.condition))
+            {
+                Execute(stmt.thenBranch);
+            }
+            else if(stmt.elseBranch != null)
+            {
+                Execute(stmt.elseBranch);
+            }
+            return Unit.Default;
+        }
+
+        public Unit VisitWhileStmt(Stmt.While stmt)
+        {
+            while (IsTruthy(Evaluate(stmt.condition)))
+            {
+                Execute(stmt.body);
             }
             return Unit.Default;
         }
