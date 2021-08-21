@@ -6,6 +6,7 @@ namespace clox
 {
     public class Environment
     {
+        private readonly List<string> definitions = new List<string>();
         private readonly Dictionary<string, object> values = new Dictionary<string, object>();
         
         public readonly Environment Enclosing;
@@ -20,15 +21,28 @@ namespace clox
             this.Enclosing = enclosing;
         }
 
-        public void Define(Token name, object value)
+        public void Define(Token name)
         {
             if (Enclosing != null)
             {
-                if (values.ContainsKey(name.lexeme))
+                if (definitions.Contains(name.lexeme))
                 {
                     throw new RuntimeError(name, $"Variable '{name.lexeme}' is already defined in this scope'.");
                 }
             }
+            definitions.Add(name.lexeme);
+        }
+
+        public void Define(Token name, object value)
+        {
+            if (Enclosing != null)
+            {
+                if (definitions.Contains(name.lexeme))
+                {
+                    throw new RuntimeError(name, $"Variable '{name.lexeme}' is already defined in this scope'.");
+                }
+            }
+            definitions.Add(name.lexeme);
             values[name.lexeme] = value;  
         } 
         
@@ -37,6 +51,10 @@ namespace clox
             if (values.TryGetValue(name.lexeme, out var value))
             {
                 return value;
+            }
+            if (definitions.Contains(name.lexeme))
+            {
+                throw new RuntimeError(name,$"Trying to access uninitialized variable '{name.lexeme}'.");
             }
             if (Enclosing != null)
             {
@@ -48,7 +66,7 @@ namespace clox
         public void Assign(Token name, object value)
         {
             var varName = name.lexeme;
-            if (values.ContainsKey(varName))
+            if (definitions.Contains(varName))
             {
                 values[varName] = value;
                 return;
