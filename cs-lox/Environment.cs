@@ -20,9 +20,16 @@ namespace clox
             this.Enclosing = enclosing;
         }
 
-        public void Define(string name, object value)
+        public void Define(Token name, object value)
         {
-            values[name] = value;  
+            if (Enclosing != null)
+            {
+                if (values.ContainsKey(name.lexeme))
+                {
+                    throw new RuntimeError(name, $"Variable '{name.lexeme}' is already defined in this scope'.");
+                }
+            }
+            values[name.lexeme] = value;  
         } 
         
         public object Get(Token name)

@@ -213,7 +213,7 @@ namespace cslox
             {
                 value = Evaluate(stmt.initializer);
             }
-            environment.Define(stmt.name.lexeme, value);
+            environment.Define(stmt.name, value);
             return Unit.Default;
         }
 
