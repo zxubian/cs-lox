@@ -29,7 +29,7 @@ namespace cslox
            expression     → comma;
            comma          → assignment (, assignment)*;
            assignment     → IDENTIFIER "=" assignment | ternary;
-           ternary        → equality | (ternary ? ternary : ternary)
+           ternary        → equality | (ternary "?" ternary ":" ternary)
            equality       → comparison ( ( "!=" | "==" ) comparison )* ;
            comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
            term           → factor ( ( "-" | "+" ) factor )* ;
