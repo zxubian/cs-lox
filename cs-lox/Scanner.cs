@@ -202,6 +202,24 @@ namespace cslox
                             current++;
                         } while (!isAtEnd() && !Equals(current, '\n'));
                     }
+                    else if (Equals(current, '*'))
+                    {
+                        var foundCommentEnd= false;
+                        while (!foundCommentEnd)
+                        {
+                            do
+                            {
+                                if (Equals(current, '\n'))
+                                {
+                                    line++;
+                                }
+                                current++;
+                            } while (!isAtEnd() && !Equals(current, '*'));
+                            current++;
+                            foundCommentEnd = Equals(current, '/');
+                            current++;
+                        }
+                    }
                     else
                     {
                         return TokenType.SLASH;
