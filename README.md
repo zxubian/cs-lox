@@ -9,6 +9,29 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
 - Evaluating Expressions
 - Statements and State
 
+# Language Tweaks
+
+ - Automatic nil initialization is removed. It is now a runtime error to access 
+ ```javascript
+ var a = nil;
+ var b;
+ print a;
+ >> nil;
+ print b;
+ >> Runtime error: Trying to access uninitialized variable 'b';
+ ```
+ - Language supports nill equality comparison
+ ```javascript
+ var a = nil;
+ var b = nil;
+ print a == b;
+ >> True
+ var c = "not nil";
+ print a == c;
+ >> False
+ ```
+ - Other features: ternary conditional (a ? b : c), comma operator support
+ 
 # Implementation Notes:
 
 ## Statements and State
