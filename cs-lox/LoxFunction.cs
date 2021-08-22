@@ -7,10 +7,12 @@ namespace jlox
     public class LoxFunction: ILoxCallable
     {
         private readonly Stmt.FunctionDecl declaration;
+        private readonly Environment closure;
 
-        public LoxFunction(Stmt.FunctionDecl declaration)
+        public LoxFunction(Stmt.FunctionDecl declaration, Environment closure)
         {
             this.declaration = declaration;
+            this.closure = closure;
             Arity = declaration.parameters.Count;
         }
 
@@ -18,7 +20,7 @@ namespace jlox
 
         public object Call(Interpreter interpreter, IEnumerable<object> arguments)
         {
-            var environment = new Environment(interpreter.Globals);
+            var environment = new Environment(closure);
             var i = 0;
             foreach (var arg in arguments)
             {
@@ -26,7 +28,6 @@ namespace jlox
                 environment.Define(parameter.lexeme, arg);
                 ++i;
             }
-
             try
             {
                 interpreter.ExecuteBlock(declaration.body, environment);

@@ -84,7 +84,7 @@ namespace cslox
 
         public Unit VisitFunctionDeclStmt(Stmt.FunctionDecl stmt)
         {
-            var function = new LoxFunction(stmt);
+            var function = new LoxFunction(stmt, environment);
             environment.Define(stmt.name, function);
             return Unit.Default;
         }

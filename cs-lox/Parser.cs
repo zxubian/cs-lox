@@ -112,14 +112,17 @@ namespace cslox
             var name = Consume(TokenType.IDENTIFIER, $"{kind} name expected.");
             var parameters = new List<Token>();
             Consume(TokenType.LEFT_PAREN, $"Expected '(' after {kind} name.");
-            do
+            if (!Check(TokenType.RIGHT_PAREN))
             {
-                if (parameters.Count >= FUNCTION_MAX_PARAMETER_COUNT)
+                do
                 {
-                    Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
-                }
-                parameters.Add(Consume(TokenType.IDENTIFIER, "Expected parameter name."));
-            } while (Match(TokenType.COMMA));
+                    if (parameters.Count >= FUNCTION_MAX_PARAMETER_COUNT)
+                    {
+                        Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
+                    }
+                    parameters.Add(Consume(TokenType.IDENTIFIER, "Expected parameter name."));
+                } while (Match(TokenType.COMMA));
+            }
             Consume(TokenType.RIGHT_PAREN, $"Expected '(' after {kind} parameter list.");
             Consume(TokenType.LEFT_BRACE, $"{kind} body should be inside a block.");
             var body = Block();
