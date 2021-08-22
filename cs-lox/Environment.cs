@@ -31,6 +31,15 @@ namespace clox
             }
             definitions.Add(name.lexeme);
         }
+        
+        public void Define(string name, object value)
+        {
+            if (!definitions.Contains(name))
+            {
+                definitions.Add(name);
+            }
+            values[name] = value;  
+        } 
 
         public void Define(Token name, object value)
         {

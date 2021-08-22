@@ -24,17 +24,20 @@ namespace cslox
                 "Literal: Object value",
                 "Unary: Token operatorToken, Expr right",
                 "Ternary: Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right",
-                "Variable: Token name"
+                "Variable: Token name",
+                "Call: Expr callee, Token closingParen, List<Expr> arguments"
             });
             DefineAst(outputDir, "Stmt", new List<string>
             {
                 "Expression: Expr expression",
                 "Print: Expr expression",
-                "Var: Token name, Expr initializer",
+                "VarDecl: Token name, Expr initializer",
+                "FunctionDecl: Token name, List<Token> parameters, List<Stmt> body",
                 "Block: List<Stmt> statements",
                 "If: Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "While: Expr condition, Stmt body",
-                "Break:"
+                "Break:",
+                "Return: Token Keyword, Expr value"
             });
             return 0;
         }

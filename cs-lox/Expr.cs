@@ -16,6 +16,7 @@ namespace cslox
 			 T VisitUnaryExpr(Unary expr);
 			 T VisitTernaryExpr(Ternary expr);
 			 T VisitVariableExpr(Variable expr);
+			 T VisitCallExpr(Call expr);
 		}
 		public class Assign : Expr
 		{
@@ -116,6 +117,20 @@ namespace cslox
 
 			public readonly Token name;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitVariableExpr(this);
+		}
+		public class Call : Expr
+		{
+			public Call (Expr callee, Token closingParen, List<Expr> arguments)
+			{
+			this.callee = callee;
+			this.closingParen = closingParen;
+			this.arguments = arguments;
+			}
+
+			public readonly Expr callee;
+			public readonly Token closingParen;
+			public readonly List<Expr> arguments;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitCallExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

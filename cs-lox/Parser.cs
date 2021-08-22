@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,8 +7,9 @@ namespace cslox
     public class Parser
     {
         private readonly IReadOnlyList<Token> tokens;
-
         private int current = 0;
+        
+        private const int FUNCTION_MAX_PARAMETER_COUNT = 255;
 
         public Parser(IReadOnlyList<Token> tokens)
         {
@@ -16,21 +18,26 @@ namespace cslox
         
         /*
            program        → declaration* EOF ;
-           declaration    → varDecl | statement ;
+           declaration    → varDecl | funDecl | statement ;
            varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
+           funDecl        → fun function;
+           function       → IDENTIFIER "(" parameters? ")" block;
+           arguments       → IDENTIFIER ( "," IDENTIFIER )*;
            statement      → exprStmt | 
                           | printStmt 
                           | block
                           | ifStmt
                           | whileStmt
                           | forStmt
-                          | breakStmt;
+                          | breakStmt
+                          | returnStmt;
            exprStmt       → expression ";" ;
            printStmt      → "print" expression ";" ; 
            ifStmt         → "if" "("expression ")" statement ("else" statement)?;
            whileStmt      → "while" "(" expression ")" statement;
            forStmt        → "for "(" ( varDecl | exprStmt) (expression)? ";" (expression)? ")" statement;
-           breakStatement → "break"";" 
+           breakStmt      → "break"";" 
+           returnStmt     → "return" (expression)? ";" 
            block          → "{" declaration* "}"; 
            expression     → comma;
            comma          → assignment (, assignment)*;
@@ -42,8 +49,9 @@ namespace cslox
            comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
            term           → factor ( ( "-" | "+" ) factor )* ;
            factor         → unary ( ( "/" | "*" ) unary )* ;
-           unary          → ( "!" | "-" ) unary
-                          | primary ;
+           unary          → ( "!" | "-" ) unary | call ;
+           call           → primary ( "(" arguments? ")" ) *;
+           arguments       → expression ( "," expression )*;
            primary        →   "true" | "false" | "nil"
                           | NUMBER | STRING 
                           | "(" expression ")" 
@@ -70,6 +78,10 @@ namespace cslox
                     return VarDeclaration();
                 }
 
+                if (Match(TokenType.FUN))
+                {
+                    return Function("Function");
+                }
                 return Statement();
             }
             catch (ParseError)
@@ -82,14 +94,41 @@ namespace cslox
         // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
         private Stmt VarDeclaration()
         {
-            var identifier = Consume(TokenType.IDENTIFIER, "Variable name expected");
+            var identifier = Consume(TokenType.IDENTIFIER, "Variable name expected.");
             Expr initializer = null;
             if (Match(TokenType.EQUAL))
             {
                 initializer = Expression();
             }
-            Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-            return new Stmt.Var(identifier, initializer);
+            Consume(TokenType.SEMICOLON, "Expected ';' after variable declaration.");
+            return new Stmt.VarDecl(identifier, initializer);
+        }
+        
+        // funDecl        → fun function;
+        // function       → IDENTIFIER "(" parameters? ")" block;
+
+        private Stmt.FunctionDecl Function(string kind)
+        {
+            var name = Consume(TokenType.IDENTIFIER, $"{kind} name expected.");
+            var parameters = new List<Token>();
+            Consume(TokenType.LEFT_PAREN, $"Expected '(' after {kind} name.");
+            do
+            {
+                if (parameters.Count >= FUNCTION_MAX_PARAMETER_COUNT)
+                {
+                    Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
+                }
+                parameters.Add(Consume(TokenType.IDENTIFIER, "Expected parameter name."));
+            } while (Match(TokenType.COMMA));
+            Consume(TokenType.RIGHT_PAREN, $"Expected '(' after {kind} parameter list.");
+            Consume(TokenType.LEFT_BRACE, $"{kind} body should be inside a block.");
+            var body = Block();
+            if (body is Stmt.Block bodyBlock)
+            {
+                return new Stmt.FunctionDecl(name, parameters, bodyBlock.statements);
+            }
+            Error(Previous(), $"{kind} body should be inside a block.");
+            return new Stmt.FunctionDecl(name, parameters, new List<Stmt>());
         }
         
         // statement      → exprStmt | printStmt ;
@@ -119,6 +158,10 @@ namespace cslox
             {
                 return BreakStatement();
             }
+            if (Match(TokenType.RETURN))
+            {
+                return ReturnStatement();
+            }
             return ExpressionStatement();
         }
         
@@ -126,7 +169,7 @@ namespace cslox
         private Stmt PrintStatement()
         {
             var expression = Expression();
-            Consume(TokenType.SEMICOLON, "; expected after statement");
+            Consume(TokenType.SEMICOLON, "; expected after statement.");
             return new Stmt.Print(expression);
         }
 
@@ -134,9 +177,9 @@ namespace cslox
 
         private Stmt IfStatement()
         {
-            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'");
+            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'.");
             var condition = Expression();
-            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'if' condition");
+            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'if' condition.");
             var thenBranch = Statement();
             Stmt elseBranch = null;
             if (Match(TokenType.ELSE))
@@ -149,9 +192,9 @@ namespace cslox
         //  whileStmt         → "while" "("expression ")" statement;
         private Stmt WhileStatement()
         {
-            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'");
+            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'.");
             var condition = Expression();
-            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'while' condition");
+            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'while' condition.");
             var body = Statement();
             return new Stmt.While(condition, body);
         }
@@ -159,7 +202,7 @@ namespace cslox
         // forStmt        → "for "(" ( varDecl | exprStmt) (expression)? ";" (expression)? ")" statement ;
         private Stmt ForStatement()
         {
-            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'for'");
+            Consume(TokenType.LEFT_PAREN, "Expected '(' after 'for'.");
             Stmt initializer;
             if (Match(TokenType.SEMICOLON))
             {
@@ -178,13 +221,13 @@ namespace cslox
             {
                 condition = Expression();
             }
-            Consume(TokenType.SEMICOLON, "Expected ';' after 'for' condition");
+            Consume(TokenType.SEMICOLON, "Expected ';' after 'for' condition.");
             Expr increment = null;
             if(!Check(TokenType.RIGHT_PAREN))
             {
                 increment = Expression();
             }
-            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'for' expression");
+            Consume(TokenType.RIGHT_PAREN, "Expected ')' after 'for' expression.");
             var body = Statement();
             if (increment != null)
             {
@@ -204,8 +247,20 @@ namespace cslox
 
         private Stmt BreakStatement()
         {
-            Consume(TokenType.SEMICOLON, "Expected ';' after 'break';");
+            Consume(TokenType.SEMICOLON, "Expected ';' after 'break'.");
             return new Stmt.Break();   
+        }
+        
+        private Stmt ReturnStatement()
+        {
+            var keyword = Previous();
+            Expr value = null;
+            if (!Check(TokenType.SEMICOLON))
+            {
+                value = Assignment();
+            }
+            Consume(TokenType.SEMICOLON, "Expected ';' after 'return'.");
+            return new Stmt.Return(keyword, value);   
         }
         
         // exprStmt       → expression ";" ;
@@ -226,7 +281,7 @@ namespace cslox
             {
                 statements.Add(Declaration());
             }
-            Consume(TokenType.RIGHT_BRACE, "Expect '}' after block");
+            Consume(TokenType.RIGHT_BRACE, "Expected '}' after block.");
             return new Stmt.Block(statements);
         }
 
@@ -273,7 +328,7 @@ namespace cslox
                 var mid = Ternary();
                 if (!Match(TokenType.COLON))
                 {
-                    throw Error(Peek(), "Expect ':' for ternary conditional.");
+                    throw Error(Peek(), "Expected ':' for ternary conditional.");
                 }
                 var colon = Previous();
                 var right = Ternary();
@@ -357,7 +412,7 @@ namespace cslox
             return expr;
         }
 
-        //unary          → ( "!" | "-" ) unary | primary ;
+        //   unary          → ( "!" | "-" ) unary | call ;
         private Expr Unary()
         {
             if (Match(TokenType.BANG, TokenType.MINUS))
@@ -366,10 +421,48 @@ namespace cslox
                 var right = Unary();
                 return new Expr.Unary(operatorToken, right);
             }
-            return Primary();
+            return Call();
+        }
+        
+        
+        // call           → primary ( "(" arguments? ")" ) *;
+
+        private Expr Call()
+        {
+            var expr = Primary();
+            while(true)
+            {
+                if (Match(TokenType.LEFT_PAREN))
+                {
+                    expr = FinishCall(expr);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return expr;
         }
 
-        //primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ; 
+        private Expr FinishCall(Expr callee)
+        {
+            var arguments = new List<Expr>();
+            if (!Check(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    if (arguments.Count >= FUNCTION_MAX_PARAMETER_COUNT)
+                    {
+                        Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
+                    }
+                    arguments.Add(Assignment());
+                } while (Match(TokenType.COMMA));
+            }
+            var paren = Consume(TokenType.RIGHT_PAREN, "Expected ')' after call arguments.");
+            return new Expr.Call(callee, paren, arguments);
+        }
+
+        // primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ; 
         private Expr Primary()
         {
             if (Match(TokenType.FALSE))
@@ -391,14 +484,14 @@ namespace cslox
             if (Match(TokenType.LEFT_PAREN))
             {
                 var expr = Expression();
-                Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+                Consume(TokenType.RIGHT_PAREN, "Expected ')' after expression.");
                 return new Expr.Grouping(expr);
             }
             if (Match(TokenType.IDENTIFIER))
             {
                 return new Expr.Variable(Previous());
             }
-            throw Error(Peek(), "Expect expression.");
+            throw Error(Peek(), "Expected expression.");
         }
 
         private void Synchronize()

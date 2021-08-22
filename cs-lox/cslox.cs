@@ -31,13 +31,24 @@ namespace cslox
 
         private static void RunFile(string path)
         {
-            var source = File.ReadAllText(path, Encoding.Default);
+            string source = null;
+            try
+            {
+                source = File.ReadAllText(path, Encoding.Default);
+            }
+            catch (Exception e)
+            {
+                Error(0, $"Could not open file {path}: {e.Message}");
+            }
+            if (hadError)
+            {
+                Environment.Exit(65);
+            }
             Run(source);
             if (hadError)
             {
                 Environment.Exit(65);
             }
-
             if (hadRuntimeError)
             {
                 Environment.Exit(70);
