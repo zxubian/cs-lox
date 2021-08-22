@@ -25,7 +25,8 @@ namespace cslox
                 "Unary: Token operatorToken, Expr right",
                 "Ternary: Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right",
                 "Variable: Token name",
-                "Call: Expr callee, Token closingParen, List<Expr> arguments"
+                "Call: Expr callee, Token closingParen, List<Expr> arguments",
+                "Lambda: List<Token> parameters, List<Stmt> body"
             });
             DefineAst(outputDir, "Stmt", new List<string>
             {

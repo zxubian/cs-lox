@@ -40,7 +40,10 @@ namespace cslox
            returnStmt     → "return" (expression)? ";" 
            block          → "{" declaration* "}"; 
            expression     → comma;
-           comma          → assignment (, assignment)*;
+           comma          → functionExpr (, functionExpr)*;
+           functionExpr   → fun lambda
+           lambda         → "(" parameters? ")" block;
+           arguments      → IDENTIFIER ( "," IDENTIFIER )*;
            assignment     → IDENTIFIER "=" assignment | ternary;
            ternary        → logic_or | (ternary "?" ternary ":" ternary)
            logic_or       → logic_and (or logic_and )*;
@@ -51,7 +54,7 @@ namespace cslox
            factor         → unary ( ( "/" | "*" ) unary )* ;
            unary          → ( "!" | "-" ) unary | call ;
            call           → primary ( "(" arguments? ")" ) *;
-           arguments       → expression ( "," expression )*;
+           arguments       → assignment ( "," assignment )*;
            primary        →   "true" | "false" | "nil"
                           | NUMBER | STRING 
                           | "(" expression ")" 
@@ -109,7 +112,7 @@ namespace cslox
 
         private Stmt.FunctionDecl Function(string kind)
         {
-            var name = Consume(TokenType.IDENTIFIER, $"{kind} name expected.");
+            var name = Consume(TokenType.IDENTIFIER, $"Function name expected.");
             var parameters = new List<Token>();
             Consume(TokenType.LEFT_PAREN, $"Expected '(' after {kind} name.");
             if (!Check(TokenType.RIGHT_PAREN))
@@ -291,17 +294,51 @@ namespace cslox
         // expression     → comma;
         private Expr Expression() => Comma();
 
-        // comma          → assignment (, assignment)* ;
+        // comma          → functionExpr(, functionExpr)* ;
         private Expr Comma()
         {
-            var expr = Assignment();
+            var expr = FunctionExpr();
             while (Match(TokenType.COMMA))
             {
                 var operatorToken = Previous();
-                var right = Assignment();
+                var right = FunctionExpr();
                 expr = new Expr.Binary(expr, operatorToken, right);
             }
             return expr;
+        }
+
+        private Expr FunctionExpr()
+        {
+            if (Match(TokenType.FUN))
+            {
+                return Lambda();
+            }
+            return Assignment();
+        }
+
+        private Expr Lambda()
+        {
+            var parameters = new List<Token>();
+            Consume(TokenType.LEFT_PAREN, $"Expected '(' after 'fun'.");
+            if (!Check(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    if (parameters.Count >= FUNCTION_MAX_PARAMETER_COUNT)
+                    {
+                        Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
+                    }
+                    parameters.Add(Consume(TokenType.IDENTIFIER, "Expected parameter name."));
+                } while (Match(TokenType.COMMA));
+            }
+            Consume(TokenType.RIGHT_PAREN, $"Expected '(' after lambda parameter list.");
+            Consume(TokenType.LEFT_BRACE, $"lambda body should be inside a block.");
+            var body = Block();
+            if (body is Stmt.Block bodyBlock)
+            {
+                return new Expr.Lambda(parameters, bodyBlock.statements);
+            }
+            throw Error(Previous(), $"Lambda body should be inside a block.");
         }
 
         // assignment     → IDENTIFIER "=" assignment | ternary;
@@ -458,7 +495,7 @@ namespace cslox
                     {
                         Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
                     }
-                    arguments.Add(Assignment());
+                    arguments.Add(FunctionExpr());
                 } while (Match(TokenType.COMMA));
             }
             var paren = Consume(TokenType.RIGHT_PAREN, "Expected ')' after call arguments.");

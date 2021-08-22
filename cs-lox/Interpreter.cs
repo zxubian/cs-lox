@@ -84,7 +84,7 @@ namespace cslox
 
         public Unit VisitFunctionDeclStmt(Stmt.FunctionDecl stmt)
         {
-            var function = new LoxFunction(stmt, environment);
+            var function = new LoxFunction(stmt.name.lexeme, stmt.parameters, stmt.body, environment);
             environment.Define(stmt.name, function);
             return Unit.Default;
         }
@@ -279,6 +279,11 @@ namespace cslox
                     $"Incorrect number of arguments for {Stringify(callee)}: expected {function.Arity}, but got {expr.arguments.Count}");
             }
             return function.Call(this, arguments);
+        }
+
+        public object VisitLambdaExpr(Expr.Lambda expr)
+        {
+            return new LoxFunction("lambda", expr.parameters, expr.body, environment);
         }
 
         #endregion // Expression Visitor

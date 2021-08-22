@@ -17,6 +17,7 @@ namespace cslox
 			 T VisitTernaryExpr(Ternary expr);
 			 T VisitVariableExpr(Variable expr);
 			 T VisitCallExpr(Call expr);
+			 T VisitLambdaExpr(Lambda expr);
 		}
 		public class Assign : Expr
 		{
@@ -131,6 +132,18 @@ namespace cslox
 			public readonly Token closingParen;
 			public readonly List<Expr> arguments;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitCallExpr(this);
+		}
+		public class Lambda : Expr
+		{
+			public Lambda (List<Token> parameters, List<Stmt> body)
+			{
+			this.parameters = parameters;
+			this.body = body;
+			}
+
+			public readonly List<Token> parameters;
+			public readonly List<Stmt> body;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitLambdaExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

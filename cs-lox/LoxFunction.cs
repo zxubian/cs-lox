@@ -6,14 +6,18 @@ namespace jlox
 {
     public class LoxFunction: ILoxCallable
     {
-        private readonly Stmt.FunctionDecl declaration;
         private readonly Environment closure;
+        private readonly string name;
+        private readonly List<Stmt> body;
+        private readonly List<Token> parameters;
 
-        public LoxFunction(Stmt.FunctionDecl declaration, Environment closure)
+        public LoxFunction(string name, List<Token> parameters, List<Stmt> body, Environment closure)
         {
-            this.declaration = declaration;
+            this.parameters = parameters;
+            this.name = name;
+            this.body = body;
             this.closure = closure;
-            Arity = declaration.parameters.Count;
+            Arity = parameters.Count;
         }
 
         public int Arity { get; }
@@ -24,13 +28,13 @@ namespace jlox
             var i = 0;
             foreach (var arg in arguments)
             {
-                var parameter = declaration.parameters[i];
+                var parameter = parameters[i];
                 environment.Define(parameter.lexeme, arg);
                 ++i;
             }
             try
             {
-                interpreter.ExecuteBlock(declaration.body, environment);
+                interpreter.ExecuteBlock(body, environment);
             }
             catch(Return ret)
             {
@@ -39,6 +43,6 @@ namespace jlox
             return null;
         }
 
-        public override string ToString() => $"<fn {declaration.name.lexeme}>";
+        public override string ToString() => $"<fn {name}>";
     }
 }
