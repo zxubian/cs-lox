@@ -45,3 +45,7 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
   void interpret(Expr expression) { 
  ```
  C#, however, [does not allow this](https://github.com/dotnet/csharplang/discussions/696), so I instead opted to use a Unit return type (I used a handy one I saw in [UniRx](https://github.com/neuecc/UniRx)).
+ 
+ ## Functions
+ 
+ - jlox uses an anonymous object to implement the native 'clock' function. However, C# [does not allow anonymous types to implement interfaces](https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/types/anonymous-types), so I manually created a separate Clock type.
