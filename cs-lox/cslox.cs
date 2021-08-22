@@ -80,6 +80,8 @@ namespace cslox
             {
                 return;
             }
+            var resolver = new Resolver(interpreter);
+            resolver.Resolve(statements);
             interpreter.Interpret(statements);
         }
 

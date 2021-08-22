@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using cslox;
 
 namespace clox 
@@ -71,6 +72,23 @@ namespace clox
             throw new RuntimeError(name, $"Undefined variable '{name.lexeme}'.");
         }
 
+        public object GetAt(int depth, string name)
+        {
+            var ancestor = Ancestor(depth);
+            Debug.Assert(ancestor.values.ContainsKey(name));
+            return ancestor.values[name];
+        }
+
+        private Environment Ancestor(int distance)
+        {
+            var env = this;
+            for (int i = 0; i < distance; ++i)
+            {
+                env = env.Enclosing;
+            }
+            return env;
+        }
+
         public void Assign(Token name, object value)
         {
             var varName = name.lexeme;
@@ -85,6 +103,13 @@ namespace clox
                 return;
             }
             throw new RuntimeError(name, $"Undefined variable '{varName}'");
+        }
+        
+        public void AssignAt(int depth, Token name, object value)
+        {
+            var ancestor = Ancestor(depth);
+            Debug.Assert(ancestor.values.ContainsKey(name.lexeme));
+            ancestor.values[name.lexeme] = value;
         }
     }
 }

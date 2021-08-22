@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
 using cslox.UtilityTypes;
@@ -11,13 +12,20 @@ namespace cslox
 {
     public class Interpreter: Expr.IVisitor<object>, Stmt.IVisitor<Unit>
     {
-        public readonly Environment Globals = new Environment();
+        private readonly Environment globals = new Environment();
+        
+        /// <summary>
+        /// Maps each expression that uses a variable its scope depth.
+        /// I.e. to the number of environments between the scope where the variable is used
+        /// and the one where it was initialized.
+        /// </summary>
+        private readonly Dictionary<Expr, int> locals = new Dictionary<Expr, int>();
         private Environment environment;
 
         public Interpreter()
         {
-            environment = Globals;
-            Globals.Define("clock", Clock.Impl);
+            environment = globals;
+            globals.Define("clock", Clock.Impl);
         }
         
         public void Interpret(List<Stmt> statements)
@@ -51,6 +59,11 @@ namespace cslox
                 this.environment = previousEnv;
             }
             return null;
+        }
+
+        public void Resolve(Expr expr, int depth)
+        {
+            locals[expr] = depth;
         }
         
         #region Statement Visitor
@@ -147,7 +160,14 @@ namespace cslox
         public object VisitAssignExpr(Expr.Assign expr)
         {
             var value = Evaluate(expr.value);
-            environment.Assign(expr.name, value);
+            if (locals.TryGetValue(expr, out var depth))
+            {
+                environment.AssignAt(depth, expr.name, value);
+            }
+            else
+            {
+                globals.Assign(expr.name, value);   
+            }
             return value;
         }
 
@@ -262,7 +282,7 @@ namespace cslox
         // variable evaluation
         public object VisitVariableExpr(Expr.Variable expr)
         {
-            return environment.Get(expr.name);
+            return LookUpVariable(expr.name, expr);
         }
 
         public object VisitCallExpr(Expr.Call expr)
@@ -318,6 +338,16 @@ namespace cslox
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private object Evaluate(Expr expr) => expr.Accept(this);
 
+
+        private object LookUpVariable(Token name, Expr expr)
+        {
+            if (locals.TryGetValue(expr, out var distance))
+            {
+                return environment.GetAt(distance, name.lexeme);
+            }
+            return globals.Get(name);
+        }
+
         private static bool IsTruthy(object o)
         {
             if (o != null && o is bool rightBool)
@@ -357,6 +387,7 @@ namespace cslox
             var message = operatorToken.type == TokenType.SLASH ? "Division by zero" : "Operand cannot be zero";
             throw new RuntimeError(operatorToken, message);
         }
+        
         #endregion // Helpers
     }
     
