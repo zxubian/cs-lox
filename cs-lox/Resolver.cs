@@ -11,9 +11,21 @@ namespace cslox
     public class Resolver : Expr.IVisitor<Unit>, Stmt.IVisitor<Unit>
     {
         private readonly Interpreter interpreter;
-        private readonly Stack<Dictionary<string, bool>> scopes = new Stack<Dictionary<string, bool>>();
+        private readonly Stack<Dictionary<string, VariableData>> scopes = new Stack<Dictionary<string, VariableData>>();
         private FunctionType currentFunction = FunctionType.None;
         private LoopType currentLoop = LoopType.None;
+
+        private class VariableData
+        {
+            public bool Initialized;
+            public bool Used;
+            
+            public readonly Stmt Declaration;
+            public VariableData(Stmt declaration)
+            {
+                Declaration = declaration;
+            }
+        }
 
         private enum FunctionType
         {
@@ -42,7 +54,7 @@ namespace cslox
         }
         private void BeginScope()
         {
-            scopes.Push(new Dictionary<string, bool>());
+            scopes.Push(new Dictionary<string, VariableData>());
         }
         private void Resolve(Stmt statement)
         {
@@ -57,11 +69,35 @@ namespace cslox
         }
         private void EndScope()
         {
-            scopes.Pop();
+            var scopeToEnd = scopes.Pop();
+            var unusedVariables = scopeToEnd
+                .Where(x => !x.Value.Used);
+            string type = "";
+            Token token;
+            foreach (var (name, variableData) in unusedVariables)
+            {
+                switch (variableData.Declaration)
+                {
+                    case Stmt.VarDecl varDecl:
+                        type = "variable";
+                        token = varDecl.name;
+                        break;
+                    case Stmt.FunctionDecl functionDecl:
+                        type = "function";
+                        token = functionDecl.name;
+                        break;
+                    default:
+                        type = "unknown type";
+                        token = new Token(TokenType.IDENTIFIER, name, null, -1);
+                        break;
+                }
+                cslox.Error(token, $"Unused {type} {token.lexeme}.");
+            }
         }
+        
         public Unit VisitVarDeclStmt(Stmt.VarDecl stmt)
         {
-            Declare(stmt.name);
+            Declare(stmt.name, stmt);
             if (stmt.initializer != null)
             {
                 Resolve(stmt.initializer);
@@ -69,7 +105,8 @@ namespace cslox
             Define(stmt.name);
             return Unit.Default;
         }
-        private void Declare(Token name)
+        
+        private void Declare(Token name, Stmt declaration)
         {
             if (scopes.Count == 0)
             {
@@ -80,8 +117,10 @@ namespace cslox
             {
                 cslox.Error(name, $"A variable called '{name.lexeme}' already exists in this scope.");
             }
-            scope[name.lexeme] = false;
+            var varData = new VariableData(declaration);
+            scope[name.lexeme] = varData;
         }
+        
         private void Resolve(Expr expr)
         {
             expr.Accept(this);
@@ -93,14 +132,14 @@ namespace cslox
             {
                 return;
             }
-            scopes.Peek()[name.lexeme] = true;
+            scopes.Peek()[name.lexeme].Initialized = true;
         }
         
         public Unit VisitVariableExpr(Expr.Variable expr)
         {
             if (scopes.Count > 0)
             {
-                if (scopes.Peek().TryGetValue(expr.name.lexeme, out var initialized) && !initialized)
+                if (scopes.Peek().TryGetValue(expr.name.lexeme, out var varData) && !varData.Initialized)
                 {
                     cslox.Error(expr.name, "Cannot read local variable in its own initializer");
                     return Unit.Default;
@@ -116,9 +155,11 @@ namespace cslox
             for (var i = 0; i < scopes.Length; i++)
             {
                 var scope = scopes[i];
-                if (scope.ContainsKey(name.lexeme))
+                if (scope.TryGetValue(name.lexeme, out var varData))
                 {
                     interpreter.Resolve(expr, scopes.Length - 1 - i);
+                    varData.Used = true;
+                    break;
                 }
             }
         }
@@ -132,7 +173,7 @@ namespace cslox
         
         public Unit VisitFunctionDeclStmt(Stmt.FunctionDecl stmt)
         {
-            Declare(stmt.name);
+            Declare(stmt.name, stmt);
             Define(stmt.name);
             ResolveFunction(stmt, FunctionType.Function);
             return Unit.Default;
@@ -145,7 +186,7 @@ namespace cslox
             BeginScope();
             foreach (var parameter in stmt.parameters)
             {
-                Declare(parameter);
+                Declare(parameter, new Stmt.VarDecl(parameter, null));
                 Define(parameter);
             }
             Resolve(stmt.body);
