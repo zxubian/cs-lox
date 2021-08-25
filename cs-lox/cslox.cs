@@ -44,7 +44,8 @@ namespace cslox
             {
                 Environment.Exit(65);
             }
-            Run(source);
+            var state = new Resolver.State();
+            Run(source, ref state);
             if (hadError)
             {
                 Environment.Exit(65);
@@ -57,6 +58,7 @@ namespace cslox
 
         private static void RunPrompt()
         {
+            var resolverState = new Resolver.State();
             while (true)
             {
                 var line = Console.ReadLine();
@@ -64,13 +66,13 @@ namespace cslox
                 {
                     continue;
                 }
-                Run(line);
+                Run(line, ref resolverState);
                 hadError = false;
                 hadRuntimeError = false;
             }
         }
 
-        private static void Run(string source)
+        private static void Run(string source, ref Resolver.State resolverState)
         {
             var scanner = new Scanner(source);
             var tokens = scanner.ScanTokens();
@@ -80,8 +82,13 @@ namespace cslox
             {
                 return;
             }
-            var resolver = new Resolver(interpreter);
+            var resolver = new Resolver(interpreter, ref resolverState);
             resolver.Resolve(statements);
+            if (hadError)
+            {
+                return;
+                
+            }
             interpreter.Interpret(statements);
         }
 

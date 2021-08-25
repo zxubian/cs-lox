@@ -1,5 +1,6 @@
 
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -15,6 +16,35 @@ namespace cslox
         private FunctionType currentFunction = FunctionType.None;
         private LoopType currentLoop = LoopType.None;
 
+        public class State
+        {
+            private readonly Dictionary<string, VariableData> globalScope = new Dictionary<string, VariableData>();
+            public void DeclareGlobal(string name, Stmt declaration) => globalScope[name] = new VariableData(declaration);
+            public bool DefineGlobal(string name)
+            {
+                var found = globalScope.TryGetValue(name, out var data);
+                if(found)
+                {
+                    data.Initialized = true;
+                }
+                return found;
+            }
+            public bool UseGlobal(string name)
+            {
+                var found = globalScope.TryGetValue(name, out var data);
+                if(found)
+                {
+                    data.Used = true;
+                }
+                return found;
+            }
+
+            public bool IsInitializedGlobal(string name) =>
+                globalScope.TryGetValue(name, out var data) && data.Initialized;
+
+            public bool IsDeclaredGlobal(string name) => globalScope.ContainsKey(name);
+        }
+
         private class VariableData
         {
             public bool Initialized;
@@ -26,6 +56,8 @@ namespace cslox
                 Declaration = declaration;
             }
         }
+
+        private State currentState;
 
         private enum FunctionType
         {
@@ -40,9 +72,10 @@ namespace cslox
             While
         }
 
-        public Resolver(Interpreter interpreter)
+        public Resolver(Interpreter interpreter, ref State state)
         {
             this.interpreter = interpreter;
+            currentState = state;
         }
         
         public Unit VisitBlockStmt(Stmt.Block stmt)
@@ -101,8 +134,8 @@ namespace cslox
             if (stmt.initializer != null)
             {
                 Resolve(stmt.initializer);
+                Define(stmt.name);
             }
-            Define(stmt.name);
             return Unit.Default;
         }
         
@@ -110,6 +143,7 @@ namespace cslox
         {
             if (scopes.Count == 0)
             {
+                currentState.DeclareGlobal(name.lexeme, declaration);
                 return;
             }
             var scope = scopes.Peek();
@@ -130,6 +164,10 @@ namespace cslox
         {
             if (scopes.Count == 0)
             {
+                if (!currentState.DefineGlobal(name.lexeme))
+                {
+                    cslox.Error(name, "Attempting to initialize undeclared variable.");
+                }
                 return;
             }
             scopes.Peek()[name.lexeme].Initialized = true;
@@ -141,9 +179,25 @@ namespace cslox
             {
                 if (scopes.Peek().TryGetValue(expr.name.lexeme, out var varData) && !varData.Initialized)
                 {
-                    cslox.Error(expr.name, "Cannot read local variable in its own initializer");
+                    cslox.Error(expr.name, "Cannot read local variable in its own initializer.");
                     return Unit.Default;
                 }
+            }
+            else if (scopes.Count == 0)
+            {
+                if (!currentState.IsDeclaredGlobal(expr.name.lexeme))
+                {
+                    cslox.Error(expr.name, "Attempting to use undeclared variable.");
+                }
+                else if (!currentState.IsInitializedGlobal(expr.name.lexeme))
+                {
+                    cslox.Error(expr.name, "Attempting to use uninitialized variable");
+                }
+                else
+                {
+                    currentState.UseGlobal(expr.name.lexeme);
+                }
+                return Unit.Default;
             }
             ResolveLocal(expr, expr.name);
             return Unit.Default;
@@ -152,6 +206,7 @@ namespace cslox
         private void ResolveLocal(Expr expr, Token name)
         {
             var scopes = this.scopes.ToArray();
+            var found = false;
             for (var i = 0; i < scopes.Length; i++)
             {
                 var scope = scopes[i];
@@ -159,7 +214,23 @@ namespace cslox
                 {
                     interpreter.Resolve(expr, scopes.Length - 1 - i);
                     varData.Used = true;
+                    found = true;
                     break;
+                }
+            }
+            if (!found)
+            {
+                if (!currentState.IsDeclaredGlobal(name.lexeme))
+                {
+                    cslox.Error(name, "Attempting to use undeclared variable.");
+                }
+                else if (!currentState.IsInitializedGlobal(name.lexeme))
+                {
+                    cslox.Error(name, "Attempting to use uninitialized variable");
+                }
+                else
+                {
+                    currentState.UseGlobal(name.lexeme);
                 }
             }
         }
