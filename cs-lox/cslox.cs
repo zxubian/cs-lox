@@ -5,7 +5,7 @@ using System.Text;
 namespace cslox
 {
     
-    public class jlox
+    public class cslox
     {
         private static readonly Interpreter interpreter = new Interpreter();
         private static bool hadError;

@@ -102,19 +102,23 @@ namespace cslox
 		}
 		public class Break : Stmt
 		{
-			public Break () 
-{}
+			public Break (Token keyword)
+			{
+			this.keyword = keyword;
+			}
+
+			public readonly Token keyword;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitBreakStmt(this);
 		}
 		public class Return : Stmt
 		{
-			public Return (Token Keyword, Expr value)
+			public Return (Token keyword, Expr value)
 			{
-			this.Keyword = Keyword;
+			this.keyword = keyword;
 			this.value = value;
 			}
 
-			public readonly Token Keyword;
+			public readonly Token keyword;
 			public readonly Expr value;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitReturnStmt(this);
 		}

@@ -253,8 +253,9 @@ namespace cslox
 
         private Stmt BreakStatement()
         {
+            var keyword = Previous();
             Consume(TokenType.SEMICOLON, "Expected ';' after 'break'.");
-            return new Stmt.Break();   
+            return new Stmt.Break(keyword);   
         }
         
         private Stmt ReturnStatement()
@@ -603,7 +604,7 @@ namespace cslox
 
         private ParseError Error(Token token, string message)
         {
-            jlox.Error(token, message);
+            cslox.Error(token, message);
             return new ParseError();
         }
     }

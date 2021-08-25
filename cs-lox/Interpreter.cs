@@ -39,7 +39,7 @@ namespace cslox
             }
             catch (RuntimeError e)
             {
-                jlox.RuntimeError(e);
+                cslox.RuntimeError(e);
             }
         }
 

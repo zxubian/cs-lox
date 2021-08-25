@@ -118,7 +118,7 @@ namespace cslox
                     current++;
                     return true;
                 }
-                jlox.Error(line, "Unterminated string");
+                cslox.Error(line, "Unterminated string");
                 return false;
             }
             void Number(ref int current)
@@ -253,7 +253,7 @@ namespace cslox
                     }
                     else
                     {
-                        jlox.Error(line, $"Unexpected Character: {c}");
+                        cslox.Error(line, $"Unexpected Character: {c}");
                         break;
                     }
             }

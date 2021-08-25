@@ -33,12 +33,13 @@ namespace cslox
                 "Expression: Expr expression",
                 "Print: Expr expression",
                 "VarDecl: Token name, Expr initializer",
+                //"Class: Token name, List<Stmt.Function methods>",
                 "FunctionDecl: Token name, List<Token> parameters, List<Stmt> body",
                 "Block: List<Stmt> statements",
                 "If: Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "While: Expr condition, Stmt body",
-                "Break:",
-                "Return: Token Keyword, Expr value"
+                "Break: Token keyword",
+                "Return: Token keyword, Expr value"
             });
             return 0;
         }

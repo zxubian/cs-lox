@@ -12,6 +12,21 @@ namespace cslox
     {
         private readonly Interpreter interpreter;
         private readonly Stack<Dictionary<string, bool>> scopes = new Stack<Dictionary<string, bool>>();
+        private FunctionType currentFunction = FunctionType.None;
+        private LoopType currentLoop = LoopType.None;
+
+        private enum FunctionType
+        {
+            None,
+            Function,
+            Lambda
+        }
+
+        private enum LoopType
+        {
+            None,
+            While
+        }
 
         public Resolver(Interpreter interpreter)
         {
@@ -61,6 +76,10 @@ namespace cslox
                 return;
             }
             var scope = scopes.Peek();
+            if (scope.ContainsKey(name.lexeme))
+            {
+                cslox.Error(name, $"A variable called '{name.lexeme}' already exists in this scope.");
+            }
             scope[name.lexeme] = false;
         }
         private void Resolve(Expr expr)
@@ -83,7 +102,7 @@ namespace cslox
             {
                 if (scopes.Peek().TryGetValue(expr.name.lexeme, out var initialized) && !initialized)
                 {
-                    jlox.Error(expr.name, "Cannot read local variable in its own initializer");
+                    cslox.Error(expr.name, "Cannot read local variable in its own initializer");
                     return Unit.Default;
                 }
             }
@@ -115,12 +134,14 @@ namespace cslox
         {
             Declare(stmt.name);
             Define(stmt.name);
-            ResolveFunction(stmt);
+            ResolveFunction(stmt, FunctionType.Function);
             return Unit.Default;
         }
 
-        private void ResolveFunction(Stmt.FunctionDecl stmt)
+        private void ResolveFunction(Stmt.FunctionDecl stmt, FunctionType type)
         {
+            var enclosingFunction = currentFunction;
+            currentFunction = type;
             BeginScope();
             foreach (var parameter in stmt.parameters)
             {
@@ -129,6 +150,7 @@ namespace cslox
             }
             Resolve(stmt.body);
             EndScope();
+            currentFunction = enclosingFunction;
         }
 
         public Unit VisitBinaryExpr(Expr.Binary expr)
@@ -184,7 +206,7 @@ namespace cslox
         public Unit VisitLambdaExpr(Expr.Lambda expr)
         {
             var decl = new Stmt.FunctionDecl(null, expr.parameters, expr.body);
-            ResolveFunction(decl);
+            ResolveFunction(decl, FunctionType.Lambda);
             return Unit.Default;
         }
 
@@ -213,15 +235,29 @@ namespace cslox
 
         public Unit VisitWhileStmt(Stmt.While stmt)
         {
+            var enclosingLoop = currentLoop;
+            currentLoop = LoopType.While;
             Resolve(stmt.condition);
             Resolve(stmt.body);
+            currentLoop = enclosingLoop;
             return Unit.Default;
         }
 
-        public Unit VisitBreakStmt(Stmt.Break stmt) { return Unit.Default;}
-
+        public Unit VisitBreakStmt(Stmt.Break stmt)
+        {
+            if(currentLoop == LoopType.None)
+            {
+                cslox.Error(stmt.keyword, "Cannot use 'break' outside of a loop.");
+            }
+            return Unit.Default;
+        }
+        
         public Unit VisitReturnStmt(Stmt.Return stmt)
         {
+            if (currentFunction == FunctionType.None)
+            {
+                cslox.Error(stmt.keyword, "Cannot return from top-level code.");
+            }
             Resolve(stmt.value);
             return Unit.Default;
         }
