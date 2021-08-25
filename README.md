@@ -8,6 +8,8 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
 - Parsing Expressions
 - Evaluating Expressions
 - Statements and State
+- Functions
+- Resolving and Binding
 
 # Language Tweaks
 
