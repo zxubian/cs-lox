@@ -17,7 +17,8 @@ namespace cslox
         
         /*
            program        → declaration* EOF ;
-           declaration    → varDecl | funDecl | statement ;
+           declaration    → classDecl | varDecl | funDecl | statement ;
+           classDecl      → "class" IDENTIFIER "{" function* "}" ;
            varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
            funDecl        → fun function;
            function       → IDENTIFIER "(" parameters? ")" block;
@@ -43,7 +44,7 @@ namespace cslox
            functionExpr   → fun lambda
            lambda         → "(" parameters? ")" block;
            arguments      → IDENTIFIER ( "," IDENTIFIER )*;
-           assignment     → IDENTIFIER "=" assignment | ternary;
+           assignment     → (call ".")? IDENTIFIER "=" assignment | ternary;
            ternary        → logic_or | (ternary "?" ternary ":" ternary)
            logic_or       → logic_and (or logic_and )*;
            logic_and      → equality (and equality)*:
@@ -52,7 +53,7 @@ namespace cslox
            term           → factor ( ( "-" | "+" ) factor )* ;
            factor         → unary ( ( "/" | "*" ) unary )* ;
            unary          → ( "!" | "-" ) unary | call ;
-           call           → primary ( "(" arguments? ")" ) *;
+           call           → primary ( "(" arguments? ")" | "." IDENTIFIER) *;
            arguments       → assignment ( "," assignment )*;
            primary        →   "true" | "false" | "nil"
                           | NUMBER | STRING 
@@ -79,10 +80,13 @@ namespace cslox
                 {
                     return VarDeclaration();
                 }
-
                 if (Match(TokenType.FUN))
                 {
                     return Function("Function");
+                }
+                if (Match(TokenType.CLASS))
+                {
+                    return ClassDeclaration();
                 }
                 return Statement();
             }
@@ -91,6 +95,20 @@ namespace cslox
                 Synchronize();
                 return null;
             }
+        }
+        
+        // classDecl      → "class" IDENTIFIER "{" function* "}" ;
+        private Stmt ClassDeclaration()
+        {
+            var identifier = Consume(TokenType.IDENTIFIER, "Class name expected.");
+            Consume(TokenType.LEFT_BRACE, "Expected '{' before class body");
+            var methods = new List<Stmt.FunctionDecl>();
+            while (!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
+            {
+                methods.Add(Function("Method"));
+            }
+            Consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.");
+            return new Stmt.ClassDecl(identifier, methods);
         }
         
         // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
@@ -340,18 +358,23 @@ namespace cslox
             }
             throw Error(Previous(), $"Lambda body should be inside a block.");
         }
-
-        // assignment     → IDENTIFIER "=" assignment | ternary;
+        
+        // assignment     → (call ".")? IDENTIFIER "=" assignment | ternary;
         private Expr Assignment()
         {
             var expr = Ternary();
             if (Match(TokenType.EQUAL))
             {
                 var equals = Previous();
-                if (expr is Expr.Variable variable)
+                switch (expr)
                 {
-                    var name = variable.name;
-                    return new Expr.Assign(name, Assignment());
+                    case Expr.Variable variable:
+                    {
+                        var name = variable.name;
+                        return new Expr.Assign(name, Assignment());
+                    }
+                    case Expr.Get get:
+                        return new Expr.Set(get.obj, get.name, Assignment());
                 }
                 Error(equals, "Invalid assignment target.");
             }
@@ -465,7 +488,7 @@ namespace cslox
         }
         
         
-        // call           → primary ( "(" arguments? ")" ) *;
+        //   call           → primary ( "(" arguments? ")" | "." IDENTIFIER) *;
 
         private Expr Call()
         {
@@ -475,6 +498,11 @@ namespace cslox
                 if (Match(TokenType.LEFT_PAREN))
                 {
                     expr = FinishCall(expr);
+                }
+                else if (Match(TokenType.DOT))
+                {
+                    var name = Consume(TokenType.IDENTIFIER, "Expected property name after '.'.");
+                    expr = new Expr.Get(expr, name);
                 }
                 else
                 {

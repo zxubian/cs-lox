@@ -21,12 +21,14 @@ namespace cslox
                 "Binary: Expr left, Token operatorToken, Expr right",
                 "Logic: Expr left, Token operatorToken, Expr right",
                 "Grouping: Expr expression",
-                "Literal: Object value",
+                "Literal: object value",
                 "Unary: Token operatorToken, Expr right",
                 "Ternary: Expr left, Token firstOperator, Expr mid, Token secondOperator, Expr right",
                 "Variable: Token name",
                 "Call: Expr callee, Token closingParen, List<Expr> arguments",
-                "Lambda: List<Token> parameters, List<Stmt> body"
+                "Lambda: List<Token> parameters, List<Stmt> body",
+                "Get: Expr obj, Token name",
+                "Set: Expr obj, Token name, Expr value"
             });
             DefineAst(outputDir, "Stmt", new List<string>
             {
@@ -39,7 +41,8 @@ namespace cslox
                 "If: Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "While: Expr condition, Stmt body",
                 "Break: Token keyword",
-                "Return: Token keyword, Expr value"
+                "Return: Token keyword, Expr value",
+                "ClassDecl: Token name, List<Stmt.FunctionDecl> methods"
             });
             return 0;
         }

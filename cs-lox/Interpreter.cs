@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using cslox.UtilityTypes;
 using jlox;
+using jlox.Types;
 using Environment = clox.Environment;
 
 namespace cslox
@@ -148,6 +150,14 @@ namespace cslox
                 value = Evaluate(stmt.value);
             }
             throw new Return(value);
+        }
+
+        public Unit VisitClassDeclStmt(Stmt.ClassDecl stmt)
+        {
+            environment.Define(stmt.name, null);
+            var @class = new LoxClass(stmt.name.lexeme);
+            environment.Assign(stmt.name, @class);
+            return default;
         }
 
         #endregion //Statement Visitor
@@ -302,6 +312,26 @@ namespace cslox
         public object VisitLambdaExpr(Expr.Lambda expr)
         {
             return new LoxFunction("lambda", expr.parameters, expr.body, environment);
+        }
+
+        public object VisitGetExpr(Expr.Get expr)
+        {
+            var propertyParent = Evaluate(expr.obj);
+            if (!(propertyParent is LoxInstance instance))
+            {
+                throw new RuntimeError(expr.name, "Only instances have properties.");
+            }
+            return instance.Get(expr.name);
+        }
+
+        public object VisitSetExpr(Expr.Set expr)
+        {
+            var propertyParent = Evaluate(expr.obj);
+            if (!(propertyParent is LoxInstance instance))
+            {
+                throw new RuntimeError(expr.name, "Only instances have properties.");
+            }
+            return instance.Set(expr.name, expr.value);
         }
 
         #endregion // Expression Visitor
