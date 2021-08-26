@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace cslox
@@ -16,6 +17,7 @@ namespace cslox
 			 T VisitWhileStmt(While stmt);
 			 T VisitBreakStmt(Break stmt);
 			 T VisitReturnStmt(Return stmt);
+			 T VisitClassDeclStmt(ClassDecl stmt);
 		}
 		public class Expression : Stmt
 		{
@@ -120,6 +122,18 @@ namespace cslox
 			public readonly Token keyword;
 			public readonly Expr value;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitReturnStmt(this);
+		}
+		public class ClassDecl : Stmt
+		{
+			public ClassDecl (Token name, List<Stmt.FunctionDecl> methods)
+			{
+			this.name = name;
+			this.methods = methods;
+			}
+
+			public readonly Token name;
+			public readonly List<Stmt.FunctionDecl> methods;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitClassDeclStmt(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

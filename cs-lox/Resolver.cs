@@ -318,6 +318,19 @@ namespace cslox
             return Unit.Default;
         }
 
+        public Unit VisitGetExpr(Expr.Get expr)
+        {
+            Resolve(expr.obj);
+            return Unit.Default;
+        }
+
+        public Unit VisitSetExpr(Expr.Set expr)
+        {
+            Resolve(expr.obj);
+            Resolve(expr.value);
+            return Unit.Default;
+        }
+
         public Unit VisitExpressionStmt(Stmt.Expression stmt)
         {
             Resolve(stmt.expression);
@@ -367,6 +380,13 @@ namespace cslox
                 cslox.Error(stmt.keyword, "Cannot return from top-level code.");
             }
             Resolve(stmt.value);
+            return Unit.Default;
+        }
+
+        public Unit VisitClassDeclStmt(Stmt.ClassDecl stmt)
+        {
+            Declare(stmt.name, stmt);
+            Define(stmt.name);
             return Unit.Default;
         }
     }

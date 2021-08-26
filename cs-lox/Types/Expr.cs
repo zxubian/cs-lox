@@ -18,6 +18,8 @@ namespace cslox
 			 T VisitVariableExpr(Variable expr);
 			 T VisitCallExpr(Call expr);
 			 T VisitLambdaExpr(Lambda expr);
+			 T VisitGetExpr(Get expr);
+			 T VisitSetExpr(Set expr);
 		}
 		public class Assign : Expr
 		{
@@ -71,12 +73,12 @@ namespace cslox
 		}
 		public class Literal : Expr
 		{
-			public Literal (Object value)
+			public Literal (object value)
 			{
 			this.value = value;
 			}
 
-			public readonly Object value;
+			public readonly object value;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitLiteralExpr(this);
 		}
 		public class Unary : Expr
@@ -144,6 +146,32 @@ namespace cslox
 			public readonly List<Token> parameters;
 			public readonly List<Stmt> body;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitLambdaExpr(this);
+		}
+		public class Get : Expr
+		{
+			public Get (Expr obj, Token name)
+			{
+			this.obj = obj;
+			this.name = name;
+			}
+
+			public readonly Expr obj;
+			public readonly Token name;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitGetExpr(this);
+		}
+		public class Set : Expr
+		{
+			public Set (Expr obj, Token name, Expr value)
+			{
+			this.obj = obj;
+			this.name = name;
+			this.value = value;
+			}
+
+			public readonly Expr obj;
+			public readonly Token name;
+			public readonly Expr value;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitSetExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);
