@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Text;
 using cslox.UtilityTypes;
 using jlox;
 using Environment = clox.Environment;
@@ -15,11 +13,15 @@ namespace cslox
         private readonly Environment globals = new Environment();
         
         /// <summary>
-        /// Maps each expression that uses a variable its scope depth.
-        /// I.e. to the number of environments between the scope where the variable is used
-        /// and the one where it was initialized.
+        /// Maps each expression that uses a variable that contains:
+        /// 1) its scope depth
+        ///     i.e. the number of environments between the scope where the variable is used
+        ///     and the one where it was initialized.
+        /// 2) the index of the variable in the variable array in the scope
         /// </summary>
-        private readonly Dictionary<Expr, int> locals = new Dictionary<Expr, int>();
+        private readonly Dictionary<Expr, (int depth, int index)> locals = new Dictionary<Expr, (int depth, int index)>();
+        private readonly Dictionary<string, int> globalIndicies = new Dictionary<string, int>();
+        
         private Environment environment;
 
         public Interpreter()
@@ -61,9 +63,9 @@ namespace cslox
             return null;
         }
 
-        public void Resolve(Expr expr, int depth)
+        public void Resolve(Expr expr, int depth, int index)
         {
-            locals[expr] = depth;
+            locals[expr] = (depth, index);
         }
         
         #region Statement Visitor
@@ -83,14 +85,19 @@ namespace cslox
         // variable declaration
         public Unit VisitVarDeclStmt(Stmt.VarDecl stmt)
         {
+            int index;
             if (stmt.initializer != null)
             {
                 var value = Evaluate(stmt.initializer);
-                environment.Define(stmt.name, value);
+                index = environment.Define(stmt.name, value);
             }
             else
             {
-                environment.Define(stmt.name);
+                index = environment.Define(stmt.name);
+            }
+            if (environment.Enclosing == null)
+            {
+                globalIndicies[stmt.name.lexeme] = index;
             }
             return Unit.Default;
         }
@@ -160,13 +167,14 @@ namespace cslox
         public object VisitAssignExpr(Expr.Assign expr)
         {
             var value = Evaluate(expr.value);
-            if (locals.TryGetValue(expr, out var depth))
+            if (locals.TryGetValue(expr, out var location))
             {
-                environment.AssignAt(depth, expr.name, value);
+                environment.AssignAt(location.depth, location.index, expr.name, value);
             }
             else
             {
-                globals.Assign(expr.name, value);   
+                var index = globalIndicies[expr.name.lexeme];
+                globals.Assign(expr.name, index, value);   
             }
             return value;
         }
@@ -341,11 +349,15 @@ namespace cslox
 
         private object LookUpVariable(Token name, Expr expr)
         {
-            if (locals.TryGetValue(expr, out var distance))
+            if (locals.TryGetValue(expr, out var position))
             {
-                return environment.GetAt(distance, name.lexeme);
+                return environment.GetAt(name, position.depth, position.index);
             }
-            return globals.Get(name);
+            if (!globalIndicies.TryGetValue(name.lexeme, out var index))
+            {
+                index = -1;
+            }
+            return globals.Get(name, index);
         }
 
         private static bool IsTruthy(object o)

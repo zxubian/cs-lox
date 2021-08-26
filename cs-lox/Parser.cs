@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -18,7 +17,8 @@ namespace cslox
         
         /*
            program        → declaration* EOF ;
-           declaration    → varDecl | funDecl | statement ;
+           declaration    → classDecl | varDecl | funDecl | statement ;
+           classDecl      → "class" IDENTIFIER "{" function* "}";
            varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
            funDecl        → fun function;
            function       → IDENTIFIER "(" parameters? ")" block;

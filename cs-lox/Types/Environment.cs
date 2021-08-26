@@ -1,13 +1,14 @@
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using cslox;
 
 namespace clox 
 {
     public class Environment
     {
-        private readonly List<string> definitions = new List<string>();
-        private readonly Dictionary<string, object> values = new Dictionary<string, object>();
+        private readonly List<(bool initialized, object value)> values = new List<(bool initialized, object value)>();
+
+        private int currentIndex = 0;
         
         public readonly Environment Enclosing;
 
@@ -21,62 +22,50 @@ namespace clox
             this.Enclosing = enclosing;
         }
 
-        public void Define(Token name)
+        public int Define(Token _)
         {
-            if (Enclosing != null)
-            {
-                if (definitions.Contains(name.lexeme))
-                {
-                    throw new RuntimeError(name, $"Variable '{name.lexeme}' is already defined in this scope'.");
-                }
-            }
-            definitions.Add(name.lexeme);
+            values.Add((false, null));
+            return values.Count - 1;
         }
         
-        public void Define(string name, object value)
+        public int Define(string _, object value)
         {
-            if (!definitions.Contains(name))
-            {
-                definitions.Add(name);
-            }
-            values[name] = value;  
+            values.Add((true, value));
+            return values.Count - 1;
         } 
 
-        public void Define(Token name, object value)
+        public int Define(Token _, object value)
         {
-            if (Enclosing != null)
-            {
-                if (definitions.Contains(name.lexeme))
-                {
-                    throw new RuntimeError(name, $"Variable '{name.lexeme}' is already defined in this scope'.");
-                }
-            }
-            definitions.Add(name.lexeme);
-            values[name.lexeme] = value;  
+            values.Add((true, value));
+            return values.Count - 1;
         } 
         
-        public object Get(Token name)
+        public object Get(Token name, int index)
         {
-            if (values.TryGetValue(name.lexeme, out var value))
+            try
+            {
+                var (initialized, value ) = values[index];
+                if (!initialized)
+                {
+                    throw new Exception();
+                }
+                return value;
+            }
+            catch(Exception)
+            {
+                throw new RuntimeError(name, $"Undefined variable '{name.lexeme}'.");
+            }
+        }
+
+        public object GetAt(Token name, int depth, int index)
+        {
+            var ancestor = Ancestor(depth);
+            var (initialized, value) = ancestor.values[index];
+            if (initialized)
             {
                 return value;
             }
-            if (definitions.Contains(name.lexeme))
-            {
-                throw new RuntimeError(name,$"Trying to access uninitialized variable '{name.lexeme}'.");
-            }
-            if (Enclosing != null)
-            {
-                return Enclosing.Get(name);
-            }
-            throw new RuntimeError(name, $"Undefined variable '{name.lexeme}'.");
-        }
-
-        public object GetAt(int depth, string name)
-        {
-            var ancestor = Ancestor(depth);
-            Debug.Assert(ancestor.values.ContainsKey(name));
-            return ancestor.values[name];
+            throw new RuntimeError(name, $"Undefined variable");
         }
 
         private Environment Ancestor(int distance)
@@ -89,27 +78,29 @@ namespace clox
             return env;
         }
 
-        public void Assign(Token name, object value)
+        public void Assign(Token name, int index, object value)
         {
-            var varName = name.lexeme;
-            if (definitions.Contains(varName))
+            try
             {
-                values[varName] = value;
-                return;
+                values[index] = (true, value);
             }
-            if (Enclosing != null)
+            catch (Exception)
             {
-                Enclosing.Assign(name, value);
-                return;
+                throw new RuntimeError(name, $"Undefined variable '{name.lexeme}'");
             }
-            throw new RuntimeError(name, $"Undefined variable '{varName}'");
         }
         
-        public void AssignAt(int depth, Token name, object value)
+        public void AssignAt(int depth, int index, Token name, object value)
         {
             var ancestor = Ancestor(depth);
-            Debug.Assert(ancestor.values.ContainsKey(name.lexeme));
-            ancestor.values[name.lexeme] = value;
+            try
+            {
+                ancestor.values[index] = (true, value);
+            }
+            catch (Exception)
+            {
+                throw new RuntimeError(name, $"Undefined variable '{name.lexeme}'");
+            }
         }
     }
 }

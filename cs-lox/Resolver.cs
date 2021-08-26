@@ -1,10 +1,6 @@
 
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Xml.Schema;
 using cslox.UtilityTypes;
 
 namespace cslox
@@ -19,7 +15,13 @@ namespace cslox
         public class State
         {
             private readonly Dictionary<string, VariableData> globalScope = new Dictionary<string, VariableData>();
-            public void DeclareGlobal(string name, Stmt declaration) => globalScope[name] = new VariableData(declaration);
+            public int DeclareGlobal(string name, Stmt declaration)
+            {
+                var index = globalScope.Count;
+                globalScope[name] = new VariableData(declaration, index);
+                return index;
+            } 
+            
             public bool DefineGlobal(string name)
             {
                 var found = globalScope.TryGetValue(name, out var data);
@@ -51,9 +53,11 @@ namespace cslox
             public bool Used;
             
             public readonly Stmt Declaration;
-            public VariableData(Stmt declaration)
+            public readonly int Index;
+            public VariableData(Stmt declaration, int index)
             {
                 Declaration = declaration;
+                Index = index;
             }
         }
 
@@ -151,7 +155,8 @@ namespace cslox
             {
                 cslox.Error(name, $"A variable called '{name.lexeme}' already exists in this scope.");
             }
-            var varData = new VariableData(declaration);
+            var index = scope.Count;
+            var varData = new VariableData(declaration, index);
             scope[name.lexeme] = varData;
         }
         
@@ -212,7 +217,7 @@ namespace cslox
                 var scope = scopes[i];
                 if (scope.TryGetValue(name.lexeme, out var varData))
                 {
-                    interpreter.Resolve(expr, scopes.Length - 1 - i);
+                    interpreter.Resolve(expr, scopes.Length - 1 - i, varData.Index);
                     varData.Used = true;
                     found = true;
                     break;
