@@ -18,9 +18,10 @@ namespace cslox
         /*
            program        → declaration* EOF ;
            declaration    → classDecl | varDecl | funDecl | statement ;
-           classDecl      → "class" IDENTIFIER "{" function* "}" ;
+           classDecl      → "class" IDENTIFIER "{" staticFunction* "}" ;
            varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
            funDecl        → fun function;
+           staticFunction → ("class")? function;
            function       → IDENTIFIER "(" parameters? ")" block;
            arguments       → IDENTIFIER ( "," IDENTIFIER )*;
            statement      → exprStmt | 
@@ -103,12 +104,21 @@ namespace cslox
             var identifier = Consume(TokenType.IDENTIFIER, "Class name expected.");
             Consume(TokenType.LEFT_BRACE, "Expected '{' before class body");
             var methods = new List<Stmt.FunctionDecl>();
+            var staticMethods = new List<Stmt.FunctionDecl>();
             while (!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
             {
-                methods.Add(Function("Method"));
+                var isStatic = Match(TokenType.CLASS);
+                if (isStatic)
+                {
+                    staticMethods.Add(Function("Static Method"));
+                }
+                else
+                {
+                    methods.Add(Function("Method"));
+                }
             }
             Consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.");
-            return new Stmt.ClassDecl(identifier, methods);
+            return new Stmt.ClassDecl(identifier, methods, staticMethods);
         }
         
         // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 

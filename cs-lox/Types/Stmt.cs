@@ -124,14 +124,16 @@ namespace cslox
 		}
 		public class ClassDecl : Stmt
 		{
-			public ClassDecl (Token name, List<Stmt.FunctionDecl> methods)
+			public ClassDecl (Token name, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods)
 			{
 			this.name = name;
 			this.methods = methods;
+			this.staticMethods = staticMethods;
 			}
 
 			public readonly Token name;
 			public readonly List<Stmt.FunctionDecl> methods;
+			public readonly List<Stmt.FunctionDecl> staticMethods;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitClassDeclStmt(this);
 		}
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using cslox.UtilityTypes;
 using cslox.Types;
+using jlox.Types;
 using Environment = clox.Environment;
 
 namespace cslox
@@ -169,7 +170,16 @@ namespace cslox
                 var func = new LoxFunction(name, parameters, body, environment, name == "init");
                 methods[name] = func;
             }
-            var @class = new LoxClass(stmt.name.lexeme, methods);
+            var staticMethods = new Dictionary<string, LoxFunction>();
+            foreach (var methodDecl in stmt.staticMethods)
+            {
+                var name = methodDecl.name.lexeme;
+                var parameters = methodDecl.parameters;
+                var body = methodDecl.body;
+                var func = new LoxFunction(name, parameters, body, environment, false);
+                staticMethods[name] = func;
+            }
+            var @class = new LoxClass(stmt.name.lexeme, methods, staticMethods);
             environment.Assign(stmt.name, @class);
             return default;
         }
@@ -331,22 +341,38 @@ namespace cslox
         public object VisitGetExpr(Expr.Get expr)
         {
             var propertyParent = Evaluate(expr.obj);
-            if (!(propertyParent is LoxInstance instance))
+            if (!(propertyParent is ILoxInstance instance))
             {
                 throw new RuntimeError(expr.name, "Only instances have properties.");
             }
-            return instance.Get(expr.name);
+            switch (instance)
+            {
+                case LoxClass _:
+                case LoxInstance _:
+                    return instance.Get(expr.name);
+                default:
+                    throw new RuntimeError(expr.name, "Expected class instance");
+            }
         }
 
         public object VisitSetExpr(Expr.Set expr)
         {
             var propertyParent = Evaluate(expr.obj);
-            if (!(propertyParent is LoxInstance instance))
+            if (!(propertyParent is ILoxInstance instance))
             {
                 throw new RuntimeError(expr.name, "Only instances have properties.");
             }
-            var value = Evaluate(expr.value);
-            return instance.Set(expr.name, value);
+            switch (instance)
+            {
+                case LoxClass _:
+                    // maybe support static fields?
+                    throw new RuntimeError(expr.name, "Expected class instance");
+                case LoxInstance classInstance:
+                    var value = Evaluate(expr.value);
+                    return instance.Set(expr.name, value);
+                default:
+                    throw new RuntimeError(expr.name, "Expected class instance");
+            }
         }
 
         public object VisitThisExpr(Expr.This expr)

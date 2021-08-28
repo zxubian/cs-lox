@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using clox;
-using cslox.Types;
+using jlox.Types;
 
 namespace cslox
 {

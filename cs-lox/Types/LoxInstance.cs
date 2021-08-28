@@ -1,35 +1,33 @@
 using System.Collections.Generic;
+using cslox;
+using cslox.Types;
 
-namespace cslox.Types
+namespace jlox.Types
 {
-    public class LoxInstance
+    public class LoxInstance: LoxInstanceBase<LoxClass>
     {
-        private LoxClass @class;
-        private Dictionary<string, object> fields = new Dictionary<string, object>();
-        public LoxInstance(LoxClass @class)
-        {
-            this.@class = @class;
+        private readonly Dictionary<string, object> fields;
+        public LoxInstance(LoxClass @class) : base(@class) { 
         }
 
-        public object Get(Token name)
+        public override object Get(Token nameToken)
         {
-            if (fields.TryGetValue(name.lexeme, out var value))
+            var nameStr = nameToken.lexeme;
+            if (@class.TryFindMethod(nameStr, out var method))
             {
-                return value;
+                return method;
             }
-            if (@class.TryFindMethod(name.lexeme, out var method))
+            if(fields.TryGetValue(nameStr, out var field))
             {
-                return method.Bind(this);
+                return field;
             }
-            throw new RuntimeError(name, "Undefined property.");
+            throw new RuntimeError(nameToken, "Accessing undefined member.");
         }
 
-        public object Set(Token name, object value)
+        public override object Set(Token name, object value)
         {
             fields[name.lexeme] = value;
             return value;
         }
-
-        public override string ToString() => $"{@class.Name} instance";
     }
 }
