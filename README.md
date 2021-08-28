@@ -10,6 +10,7 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
 - Statements and State
 - Functions
 - Resolving and Binding
+- Classes
 
 # Language Tweaks
 
@@ -32,7 +33,40 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
  print a == c;
  >> False
  ```
+ - Static methods are supported:
+  ```javascript
+class Greeter{
+    class SayHello(){
+        print Hello, I am a static method.
+    }
+}
+Greeter.SayHello();
+>> "Hello, I am a static method."
+var a = Greeter();
+a.SayHello();
+>> Hello, I am a static method.
+ ```
+
+ - "Getter" propeties are supported:
+  ```javascript
+class Person{
+    init(name, surname){
+        this.name = name;
+        this.surname = surname;
+    }
+    fullname{
+    return name + " " + surname;
+    }
+}
+
+var john = Person("John", "Smith");
+print john.fullname;
+>> John Smith
+ ```
+ Furthermore, a compile-error is thrown if the getter never returns a value.
+ 
  - Other features: ternary conditional (a ? b : c), comma operator support, breaking out of loops, C-style block comments ( ```/*...*/ ```)
+
  
 # Implementation Notes:
 
