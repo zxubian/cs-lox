@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using cslox;
 
-namespace jlox.Types
+namespace cslox.Types
 {
     public class LoxInstance
     {
@@ -17,6 +16,10 @@ namespace jlox.Types
             if (fields.TryGetValue(name.lexeme, out var value))
             {
                 return value;
+            }
+            if (@class.TryFindMethod(name.lexeme, out var method))
+            {
+                return method.Bind(this);
             }
             throw new RuntimeError(name, "Undefined property.");
         }

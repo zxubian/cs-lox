@@ -28,7 +28,8 @@ namespace cslox
                 "Call: Expr callee, Token closingParen, List<Expr> arguments",
                 "Lambda: List<Token> parameters, List<Stmt> body",
                 "Get: Expr obj, Token name",
-                "Set: Expr obj, Token name, Expr value"
+                "Set: Expr obj, Token name, Expr value",
+                "This: Token keyword"
             });
             DefineAst(outputDir, "Stmt", new List<string>
             {

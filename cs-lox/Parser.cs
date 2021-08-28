@@ -559,6 +559,10 @@ namespace cslox
             {
                 return new Expr.Variable(Previous());
             }
+            if(Match(TokenType.THIS))
+            {
+                return new Expr.This(Previous());
+            }
             throw Error(Peek(), "Expected expression.");
         }
 

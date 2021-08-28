@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using clox;
-using cslox;
+using cslox.Types;
 
-namespace jlox
+namespace cslox
 {
     public class LoxFunction: ILoxCallable
     {
@@ -10,13 +10,15 @@ namespace jlox
         private readonly string name;
         private readonly List<Stmt> body;
         private readonly List<Token> parameters;
+        private readonly bool isInitializer;
 
-        public LoxFunction(string name, List<Token> parameters, List<Stmt> body, Environment closure)
+        public LoxFunction(string name, List<Token> parameters, List<Stmt> body, Environment closure, bool isInitializer)
         {
             this.parameters = parameters;
             this.name = name;
             this.body = body;
             this.closure = closure;
+            this.isInitializer = isInitializer;
             Arity = parameters.Count;
         }
 
@@ -38,11 +40,22 @@ namespace jlox
             }
             catch(Return ret)
             {
-                return ret.Value;
+                return isInitializer ? 
+                       closure.GetAt(0, "this") :
+                       ret.Value;
             }
-            return null;
+            return isInitializer ? 
+                   closure.GetAt(0, "this") : 
+                   null;
         }
 
         public override string ToString() => $"<fn {name}>";
+
+        public LoxFunction Bind(LoxInstance instance)
+        {
+            var closure = new Environment(this.closure);
+            closure.Define("this", instance);
+            return new LoxFunction(name, parameters, body, closure, isInitializer);
+        }
     }
 }

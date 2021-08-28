@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace cslox
@@ -20,6 +19,7 @@ namespace cslox
 			 T VisitLambdaExpr(Lambda expr);
 			 T VisitGetExpr(Get expr);
 			 T VisitSetExpr(Set expr);
+			 T VisitThisExpr(This expr);
 		}
 		public class Assign : Expr
 		{
@@ -172,6 +172,16 @@ namespace cslox
 			public readonly Token name;
 			public readonly Expr value;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitSetExpr(this);
+		}
+		public class This : Expr
+		{
+			public This (Token keyword)
+			{
+			this.keyword = keyword;
+			}
+
+			public readonly Token keyword;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitThisExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

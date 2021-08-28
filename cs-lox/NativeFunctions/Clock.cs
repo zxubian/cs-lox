@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using cslox;
 
-namespace jlox
+namespace cslox
 {
     public class Clock: ILoxCallable 
     {

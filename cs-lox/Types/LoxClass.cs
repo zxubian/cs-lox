@@ -1,22 +1,36 @@
+using System;
 using System.Collections.Generic;
-using cslox;
 
-namespace jlox.Types
+namespace cslox.Types
 {
     public class LoxClass: ILoxCallable
     {
+        private readonly Dictionary<string, LoxFunction> methods;
+        
         public readonly string Name;
+        public int Arity { get; }
 
-        public LoxClass(string name)
+        public LoxClass(string name, Dictionary<string, LoxFunction> methods)
         {
-            this.Name = name;
+            Name = name;
+            this.methods = methods;
+            Arity = TryFindMethod("init", out var initializer) ? 
+                initializer.Arity : 0;
         }
 
-        public override string ToString() => Name;
-        public int Arity => 0;
         public object Call(Interpreter interpreter, IEnumerable<object> arguments)
         {
-            return new LoxInstance(this);
+            var instance = new LoxInstance(this);
+            if (TryFindMethod("init", out var initializer))
+            {
+                initializer.Bind(instance).Call(interpreter, arguments);
+            }
+            return instance;
         }
+
+        public bool TryFindMethod(string name, out LoxFunction method) => 
+            methods.TryGetValue(name, out method);
+        
+        public override string ToString() => Name;
     }
 }

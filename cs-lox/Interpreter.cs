@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using cslox.UtilityTypes;
-using jlox;
-using jlox.Types;
+using cslox.Types;
 using Environment = clox.Environment;
 
 namespace cslox
@@ -97,7 +95,14 @@ namespace cslox
 
         public Unit VisitFunctionDeclStmt(Stmt.FunctionDecl stmt)
         {
-            var function = new LoxFunction(stmt.name.lexeme, stmt.parameters, stmt.body, environment);
+            var function = new LoxFunction
+            (
+                stmt.name.lexeme, 
+                stmt.parameters, 
+                stmt.body, 
+                environment, 
+                false
+            );
             environment.Define(stmt.name, function);
             return Unit.Default;
         }
@@ -155,7 +160,16 @@ namespace cslox
         public Unit VisitClassDeclStmt(Stmt.ClassDecl stmt)
         {
             environment.Define(stmt.name, null);
-            var @class = new LoxClass(stmt.name.lexeme);
+            var methods = new Dictionary<string, LoxFunction>();
+            foreach (var methodDecl in stmt.methods)
+            {
+                var name = methodDecl.name.lexeme;
+                var parameters = methodDecl.parameters;
+                var body = methodDecl.body;
+                var func = new LoxFunction(name, parameters, body, environment, name == "init");
+                methods[name] = func;
+            }
+            var @class = new LoxClass(stmt.name.lexeme, methods);
             environment.Assign(stmt.name, @class);
             return default;
         }
@@ -311,7 +325,7 @@ namespace cslox
 
         public object VisitLambdaExpr(Expr.Lambda expr)
         {
-            return new LoxFunction("lambda", expr.parameters, expr.body, environment);
+            return new LoxFunction("lambda", expr.parameters, expr.body, environment, false);
         }
 
         public object VisitGetExpr(Expr.Get expr)
@@ -331,7 +345,13 @@ namespace cslox
             {
                 throw new RuntimeError(expr.name, "Only instances have properties.");
             }
-            return instance.Set(expr.name, expr.value);
+            var value = Evaluate(expr.value);
+            return instance.Set(expr.name, value);
+        }
+
+        public object VisitThisExpr(Expr.This expr)
+        {
+            return LookUpVariable(expr.keyword, expr);
         }
 
         #endregion // Expression Visitor

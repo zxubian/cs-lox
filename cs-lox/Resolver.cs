@@ -1,16 +1,41 @@
-
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using cslox.UtilityTypes;
 
 namespace cslox
 {
     public class Resolver : Expr.IVisitor<Unit>, Stmt.IVisitor<Unit>
     {
+        private enum FunctionType
+        {
+            None,
+            Function,
+            Lambda,
+            // function in a class
+            Method,
+            // method with name 'init', special case because we do not allow
+            // returning from constructors
+            Initializer
+        }
+
+        private enum LoopType
+        {
+            None,
+            While
+        }
+
+        private enum ClassType
+        {
+            None,
+            Class
+        }
+        
         private readonly Interpreter interpreter;
         private readonly Stack<Dictionary<string, VariableData>> scopes = new Stack<Dictionary<string, VariableData>>();
         private FunctionType currentFunction = FunctionType.None;
         private LoopType currentLoop = LoopType.None;
+        private ClassType currentClass = ClassType.None;
 
         public class State
         {
@@ -54,19 +79,6 @@ namespace cslox
         }
 
         private State currentState;
-
-        private enum FunctionType
-        {
-            None,
-            Function,
-            Lambda
-        }
-
-        private enum LoopType
-        {
-            None,
-            While
-        }
 
         public Resolver(Interpreter interpreter, ref State state)
         {
@@ -145,7 +157,14 @@ namespace cslox
             var scope = scopes.Peek();
             if (scope.ContainsKey(name.lexeme))
             {
-                cslox.Error(name, $"A variable called '{name.lexeme}' already exists in this scope.");
+                if (name.lexeme == "this")
+                {
+                    cslox.Error(name, $"Cannot override implicit variable 'this' in a class.");
+                }
+                else
+                {
+                    cslox.Error(name, $"A variable called '{name.lexeme}' already exists in this scope.");
+                }
             }
             var varData = new VariableData(declaration);
             scope[name.lexeme] = varData;
@@ -201,18 +220,18 @@ namespace cslox
 
         private void ResolveLocal(Expr expr, Token name)
         {
-            var scopes = this.scopes.ToArray();
             var found = false;
-            for (var i = 0; i < scopes.Length; i++)
+            var i = 0;
+            foreach(var scope in scopes)
             {
-                var scope = scopes[i];
                 if (scope.TryGetValue(name.lexeme, out var varData))
                 {
-                    interpreter.Resolve(expr, scopes.Length - 1 - i);
+                    interpreter.Resolve(expr, i);
                     varData.Used = true;
                     found = true;
                     break;
                 }
+                i++;
             }
             if (!found)
             {
@@ -331,6 +350,16 @@ namespace cslox
             return Unit.Default;
         }
 
+        public Unit VisitThisExpr(Expr.This expr)
+        {
+            if (currentClass == ClassType.None)
+            {
+                cslox.Error(expr.keyword, "Cannot use 'this' outside of a class.");
+            }
+            ResolveLocal(expr, expr.keyword);
+            return Unit.Default;
+        }
+
         public Unit VisitExpressionStmt(Stmt.Expression stmt)
         {
             Resolve(stmt.expression);
@@ -375,9 +404,14 @@ namespace cslox
         
         public Unit VisitReturnStmt(Stmt.Return stmt)
         {
-            if (currentFunction == FunctionType.None)
+            switch (currentFunction)
             {
-                cslox.Error(stmt.keyword, "Cannot return from top-level code.");
+                case FunctionType.None:
+                    cslox.Error(stmt.keyword, "Cannot return from top-level code.");
+                    break;
+                case FunctionType.Initializer:
+                    cslox.Error(stmt.keyword, "Cannot return from initializer. Initializer always implicitly returns the new instance.");
+                    break;
             }
             Resolve(stmt.value);
             return Unit.Default;
@@ -385,8 +419,43 @@ namespace cslox
 
         public Unit VisitClassDeclStmt(Stmt.ClassDecl stmt)
         {
+            var oldClassType = currentClass;
+            currentClass = ClassType.Class;
             Declare(stmt.name, stmt);
             Define(stmt.name);
+            var methods = stmt.methods;
+            var methodsByName = methods.GroupBy(x => x.name.lexeme);
+            foreach (var overloadGroup in methodsByName)
+            {
+                var seenOverloads = new List<List<string>>();
+                foreach (var overload in overloadGroup)
+                {
+                    var parameters = overload.parameters.Select(x => x.lexeme).ToList();
+                    if
+                    (
+                        seenOverloads.Any
+                        (
+                            x => x.Count == parameters.Count
+                        )
+                    )
+                    {
+                        cslox.Error(overload.name, "A method declaration with the same parameter list already exists.");
+                    }
+                    else
+                    {
+                        seenOverloads.Add(parameters);
+                    }
+                }
+            }
+            BeginScope();
+            scopes.Peek()["this"] = new VariableData(stmt){Used = true, Initialized = true};
+            foreach (var methodDecl in stmt.methods)
+            {
+                var type = methodDecl.name.lexeme == "init" ? FunctionType.Initializer : FunctionType.Method;
+                ResolveFunction(methodDecl, type);
+            }
+            EndScope();
+            currentClass = oldClassType;
             return Unit.Default;
         }
     }

@@ -105,6 +105,15 @@ namespace clox
             throw new RuntimeError(name, $"Undefined variable '{varName}'");
         }
         
+        public void Assign(string name, object value)
+        {
+            if (definitions.Contains(name))
+            {
+                values[name] = value;
+                return;
+            }
+        }
+        
         public void AssignAt(int depth, Token name, object value)
         {
             var ancestor = Ancestor(depth);
