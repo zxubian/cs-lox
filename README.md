@@ -46,7 +46,7 @@ class Person{
         this.surname = surname;
     }
     fullname{
-    return name + " " + surname;
+        return name + " " + surname;
     }
 }
 
