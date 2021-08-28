@@ -15,7 +15,8 @@ namespace cslox
             Method,
             // method with name 'init', special case because we do not allow
             // returning from constructors
-            Initializer
+            Initializer,
+            StaticMethod
         }
 
         private enum LoopType
@@ -355,6 +356,10 @@ namespace cslox
             {
                 cslox.Error(expr.keyword, "Cannot use 'this' outside of a class.");
             }
+            if (currentFunction == FunctionType.StaticMethod)
+            {
+                cslox.Error(expr.keyword, "Cannot use 'this' in static method.");
+            }
             ResolveLocal(expr, expr.keyword);
             return Unit.Default;
         }
@@ -422,8 +427,9 @@ namespace cslox
             currentClass = ClassType.Class;
             Declare(stmt.name, stmt);
             Define(stmt.name);
-            var methods = stmt.methods;
-            var methodsByName = methods.GroupBy(x => x.name.lexeme);
+            var instanceMethods = stmt.methods;
+            var staticMethods = stmt.staticMethods;
+            var methodsByName = instanceMethods.Concat(staticMethods).GroupBy(x => x.name.lexeme);
             foreach (var overloadGroup in methodsByName)
             {
                 var seenOverloads = new List<List<string>>();
@@ -438,13 +444,17 @@ namespace cslox
                         )
                     )
                     {
-                        cslox.Error(overload.name, "A method declaration with the same parameter list already exists.");
+                        cslox.Error(overload.name, "A method declaration with the same signature already exists.");
                     }
                     else
                     {
                         seenOverloads.Add(parameters);
                     }
                 }
+            }
+            foreach (var staticMethod in staticMethods)
+            {
+                ResolveFunction(staticMethod, FunctionType.StaticMethod);
             }
             BeginScope();
             scopes.Peek()["this"] = new VariableData(stmt){Used = true, Initialized = true};
