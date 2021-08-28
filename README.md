@@ -14,14 +14,6 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
 
 # Language Tweaks
 
- - Automatic nil initialization is removed. It is now a runtime error to access variables that haven't been initialized.
- ```javascript
- var a = nil;
- var b;
- print a;
- >> nil;
- print b;
- >> Runtime error: Trying to access uninitialized variable 'b';
  ```
  - Language supports nill equality comparison
  ```javascript
