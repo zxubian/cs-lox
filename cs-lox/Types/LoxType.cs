@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using cslox;
 
-namespace jlox.Types
+namespace cslox.Types
 {
     public class LoxType : ILoxClass
     {

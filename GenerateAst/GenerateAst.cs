@@ -42,7 +42,7 @@ namespace cslox
                 "While: Expr condition, Stmt body",
                 "Break: Token keyword",
                 "Return: Token keyword, Expr value",
-                "ClassDecl: Token name, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods",
+                "ClassDecl: Token name, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods, List<Stmt.FunctionDecl> getProperties",
             });
             return 0;
         }
@@ -52,7 +52,6 @@ namespace cslox
             var path = $"{Path.Combine(outputDir, baseName)}.cs";
             using (var writer = new StreamWriter(path))
             {
-                writer.WriteLine("using System;");
                 writer.WriteLine("using System.Collections.Generic;");
                 writer.WriteLine();
                 writer.WriteLine("namespace cslox");

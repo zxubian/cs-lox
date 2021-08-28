@@ -18,12 +18,13 @@ namespace cslox
         /*
            program        → declaration* EOF ;
            declaration    → classDecl | varDecl | funDecl | statement ;
-           classDecl      → "class" IDENTIFIER "{" staticFunction* "}" ;
-           varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
-           funDecl        → fun function;
+           classDecl      → "class" IDENTIFIER "{" staticFunction* getter*"}" ;
            staticFunction → ("class")? function;
+           getter         → IDENTIFIER block;
            function       → IDENTIFIER "(" parameters? ")" block;
            arguments       → IDENTIFIER ( "," IDENTIFIER )*;
+           varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
+           funDecl        → fun function;
            statement      → exprStmt | 
                           | printStmt 
                           | block
@@ -83,7 +84,8 @@ namespace cslox
                 }
                 if (Match(TokenType.FUN))
                 {
-                    return Function("Function");
+                    var functionName = Consume(TokenType.IDENTIFIER, "Expected function name after 'fun'.");
+                    return Function(functionName, "Function");
                 }
                 if (Match(TokenType.CLASS))
                 {
@@ -105,20 +107,36 @@ namespace cslox
             Consume(TokenType.LEFT_BRACE, "Expected '{' before class body");
             var methods = new List<Stmt.FunctionDecl>();
             var staticMethods = new List<Stmt.FunctionDecl>();
+            var getProperties = new List<Stmt.FunctionDecl>();
             while (!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
             {
                 var isStatic = Match(TokenType.CLASS);
-                if (isStatic)
+                var methodName = Consume(TokenType.IDENTIFIER, "Expected name for property or method");
+                if (Check(TokenType.LEFT_PAREN))
                 {
-                    staticMethods.Add(Function("Static Method"));
+                    if (isStatic)
+                    {
+                        staticMethods.Add(Function(methodName, "Static Method"));
+                    }
+                    else
+                    {
+                        methods.Add(Function(methodName, "Method"));
+                    }
                 }
                 else
                 {
-                    methods.Add(Function("Method"));
+                    getProperties.Add(Getter(methodName));
                 }
             }
             Consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.");
-            return new Stmt.ClassDecl(identifier, methods, staticMethods);
+            return new Stmt.ClassDecl(identifier, methods, staticMethods, getProperties);
+        }
+
+        private Stmt.FunctionDecl Getter(Token propertyName)
+        {
+            Consume(TokenType.LEFT_BRACE, "Expected '{' after property name");
+            var block = (Stmt.Block) Block();
+            return new Stmt.FunctionDecl(propertyName, null, block.statements);
         }
         
         // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ; 
@@ -137,9 +155,8 @@ namespace cslox
         // funDecl        → fun function;
         // function       → IDENTIFIER "(" parameters? ")" block;
 
-        private Stmt.FunctionDecl Function(string kind)
+        private Stmt.FunctionDecl Function(Token name, string kind)
         {
-            var name = Consume(TokenType.IDENTIFIER, $"Function name expected.");
             var parameters = new List<Token>();
             Consume(TokenType.LEFT_PAREN, $"Expected '(' after {kind} name.");
             if (!Check(TokenType.RIGHT_PAREN))
@@ -148,7 +165,7 @@ namespace cslox
                 {
                     if (parameters.Count >= FUNCTION_MAX_PARAMETER_COUNT)
                     {
-                        Error(Peek(), $"A function can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
+                        Error(Peek(), $"A {kind} can have no more than {FUNCTION_MAX_PARAMETER_COUNT} arguments.");
                     }
                     parameters.Add(Consume(TokenType.IDENTIFIER, "Expected parameter name."));
                 } while (Match(TokenType.COMMA));

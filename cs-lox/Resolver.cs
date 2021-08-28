@@ -16,7 +16,8 @@ namespace cslox
             // method with name 'init', special case because we do not allow
             // returning from constructors
             Initializer,
-            StaticMethod
+            StaticMethod,
+            Getter
         }
 
         private enum LoopType
@@ -270,12 +271,19 @@ namespace cslox
             var enclosingFunction = currentFunction;
             currentFunction = type;
             BeginScope();
-            foreach (var parameter in stmt.parameters)
+            if (stmt.parameters != null)
             {
-                Declare(parameter, new Stmt.VarDecl(parameter, null));
-                Define(parameter);
+                foreach (var parameter in stmt.parameters)
+                {
+                    Declare(parameter, new Stmt.VarDecl(parameter, null));
+                    Define(parameter);
+                }
             }
             Resolve(stmt.body);
+            if (currentFunction == FunctionType.Getter && !stmt.body.Any(x => x is Stmt.Return))
+            {
+                cslox.Error(stmt.name, "A get property must return a value.");
+            }
             EndScope();
             currentFunction = enclosingFunction;
         }
@@ -429,26 +437,27 @@ namespace cslox
             Define(stmt.name);
             var instanceMethods = stmt.methods;
             var staticMethods = stmt.staticMethods;
-            var methodsByName = instanceMethods.Concat(staticMethods).GroupBy(x => x.name.lexeme);
+            var getterProperties = stmt.getProperties;
+            var methodsByName = instanceMethods
+                .Concat(staticMethods)
+                .Concat(getterProperties)
+                .GroupBy(x => x.name.lexeme);
             foreach (var overloadGroup in methodsByName)
             {
-                var seenOverloads = new List<List<string>>();
+                var seenSignatures = new List<int>();
                 foreach (var overload in overloadGroup)
                 {
-                    var parameters = overload.parameters.Select(x => x.lexeme).ToList();
+                    var parameterCount = overload.parameters?.Count ?? 0;
                     if
                     (
-                        seenOverloads.Any
-                        (
-                            x => x.Count == parameters.Count
-                        )
+                        seenSignatures.Any ( x => x == parameterCount )
                     )
                     {
                         cslox.Error(overload.name, "A method declaration with the same signature already exists.");
                     }
                     else
                     {
-                        seenOverloads.Add(parameters);
+                        seenSignatures.Add(parameterCount);
                     }
                 }
             }
@@ -462,6 +471,10 @@ namespace cslox
             {
                 var type = methodDecl.name.lexeme == "init" ? FunctionType.Initializer : FunctionType.Method;
                 ResolveFunction(methodDecl, type);
+            }
+            foreach (var getterProperty in getterProperties)
+            {
+                ResolveFunction(getterProperty, FunctionType.Getter);
             }
             EndScope();
             currentClass = oldClassType;

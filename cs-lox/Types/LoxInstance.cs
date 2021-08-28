@@ -1,12 +1,10 @@
 using System.Collections.Generic;
-using cslox;
-using cslox.Types;
 
-namespace jlox.Types
+namespace cslox.Types
 {
     public class LoxInstance: LoxInstanceBase<LoxClass>
     {
-        private readonly Dictionary<string, object> fields;
+        private readonly Dictionary<string, object> fields = new Dictionary<string, object>();
         public LoxInstance(LoxClass @class) : base(@class) {}
 
         public override object Get(Token nameToken)
@@ -15,6 +13,10 @@ namespace jlox.Types
             if (@class.TryFindMethod(nameStr, out var method))
             {
                 return method.Bind(this);
+            }
+            if (@class.TryFindProperty(nameStr, out var property))
+            {
+                return property.Bind(this);
             }
             if(fields.TryGetValue(nameStr, out var field))
             {

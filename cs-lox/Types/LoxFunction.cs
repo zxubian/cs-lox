@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
 using clox;
-using jlox.Types;
+using cslox.Types;
 
 namespace cslox
 {
     public class LoxFunction: ILoxCallable
     {
-        private readonly Environment closure;
-        private readonly string name;
-        private readonly List<Stmt> body;
-        private readonly List<Token> parameters;
-        private readonly bool isInitializer;
+        protected readonly Environment closure;
+        protected readonly string name;
+        protected readonly List<Stmt> body;
+        protected readonly List<Token> parameters;
+        protected readonly bool isInitializer;
 
         public LoxFunction(string name, List<Token> parameters, List<Stmt> body, Environment closure, bool isInitializer)
         {
@@ -19,7 +19,7 @@ namespace cslox
             this.body = body;
             this.closure = closure;
             this.isInitializer = isInitializer;
-            Arity = parameters.Count;
+            Arity = parameters?.Count ?? 0;
         }
 
         public int Arity { get; }
@@ -27,12 +27,15 @@ namespace cslox
         public object Call(Interpreter interpreter, IEnumerable<object> arguments)
         {
             var environment = new Environment(closure);
-            var i = 0;
-            foreach (var arg in arguments)
+            if (arguments != null)
             {
-                var parameter = parameters[i];
-                environment.Define(parameter.lexeme, arg);
-                ++i;
+                var i = 0;
+                foreach (var arg in arguments)
+                {
+                    var parameter = parameters[i];
+                    environment.Define(parameter.lexeme, arg);
+                    ++i;
+                }
             }
             try
             {
@@ -41,17 +44,17 @@ namespace cslox
             catch(Return ret)
             {
                 return isInitializer ? 
-                       closure.GetAt(0, "this") :
-                       ret.Value;
+                    closure.GetAt(0, "this") :
+                    ret.Value;
             }
             return isInitializer ? 
-                   closure.GetAt(0, "this") : 
-                   null;
+                closure.GetAt(0, "this") : 
+                null;
         }
 
         public override string ToString() => $"<fn {name}>";
 
-        public LoxFunction Bind(LoxInstance instance)
+        public virtual LoxFunction Bind(LoxInstance instance)
         {
             var closure = new Environment(this.closure);
             closure.Define("this", instance);
