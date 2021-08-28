@@ -28,11 +28,11 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
   ```javascript
 class Greeter{
     class SayHello(){
-        print Hello, I am a static method.
+        print "Hello, I am a static method."
     }
 }
 Greeter.SayHello();
->> "Hello, I am a static method."
+>> Hello, I am a static method.
 var a = Greeter();
 a.SayHello();
 >> Hello, I am a static method.
