@@ -14,8 +14,7 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
 
 # Language Tweaks
 
- ```
- - Language supports nill equality comparison
+- Language supports nill equality comparison
  ```javascript
  var a = nil;
  var b = nil;
