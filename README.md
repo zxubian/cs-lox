@@ -11,6 +11,7 @@ A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting
 - Functions
 - Resolving and Binding
 - Classes
+- Inheritance
 
 # Language Tweaks
 
