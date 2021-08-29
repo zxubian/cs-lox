@@ -160,6 +160,25 @@ namespace cslox
         public Unit VisitClassDeclStmt(Stmt.ClassDecl stmt)
         {
             environment.Define(stmt.name, null);
+            if (stmt.superClass != null)
+            {
+                var superClosure = new Environment(environment);
+                superClosure.Define("super", LookUpVariable(stmt.superClass.name, stmt.superClass));
+                environment = superClosure;
+            }
+            LoxClass superclass = null;
+            if (stmt.superClass != null)
+            {
+                var superclassObj = Evaluate(stmt.superClass);
+                if (superclassObj is LoxClass loxClass)
+                {
+                    superclass = loxClass;
+                }
+                else
+                {
+                    throw new RuntimeError(stmt.superClass.name, "Superclass must be a class.");
+                }
+            }
             var methods = new Dictionary<string, LoxFunction>();
             foreach (var methodDecl in stmt.methods)
             {
@@ -186,7 +205,11 @@ namespace cslox
                 var func = new LoxGetProperty(name, body, environment);
                 properties[name] = func;
             }
-            var @class = new LoxClass(stmt.name.lexeme, methods, staticMethods, properties);
+            var @class = new LoxClass(stmt.name.lexeme, superclass,methods, staticMethods, properties);
+            if (stmt.superClass != null)
+            {
+                environment = environment.Enclosing;
+            }
             environment.Assign(stmt.name, @class);
             return default;
         }
@@ -385,7 +408,7 @@ namespace cslox
                     throw new RuntimeError(expr.name, "Expected class instance");
                 case LoxInstance classInstance:
                     var value = Evaluate(expr.value);
-                    return instance.Set(expr.name, value);
+                    return classInstance.Set(expr.name, value);
                 default:
                     throw new RuntimeError(expr.name, "Expected class instance");
             }
@@ -394,6 +417,19 @@ namespace cslox
         public object VisitThisExpr(Expr.This expr)
         {
             return LookUpVariable(expr.keyword, expr);
+        }
+
+        public object VisitSuperExpr(Expr.Super expr)
+        {
+            var distanceToSuper= locals[expr];
+            var super = (LoxClass)environment.GetAt(distanceToSuper, "super");
+            var distanceToThis = distanceToSuper - 1;
+            var thisInstance = environment.GetAt(distanceToThis, "this") as LoxInstance;
+            if (!super.TryFindMethod(expr.method.lexeme, out var method))
+            {
+                throw new RuntimeError(expr.method, "No superclass contains method.");
+            }
+            return method.Bind(thisInstance);
         }
 
         #endregion // Expression Visitor

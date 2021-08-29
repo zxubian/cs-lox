@@ -29,7 +29,8 @@ namespace cslox
         private enum ClassType
         {
             None,
-            Class
+            Class,
+            Subclass
         }
         
         private readonly Interpreter interpreter;
@@ -372,6 +373,26 @@ namespace cslox
             return Unit.Default;
         }
 
+        public Unit VisitSuperExpr(Expr.Super expr)
+        {
+            switch (currentClass)
+            {
+                // TODO: check
+                case ClassType.None:
+                    cslox.Error(expr.keyword, "Cannot use 'super' outside of a class.");
+                    break;
+                case ClassType.Class:
+                    cslox.Error(expr.keyword, "Cannot use 'super' in a class that does not inherit from any superclass.");
+                    break;
+            }
+            if (currentFunction == FunctionType.StaticMethod)
+            {
+                cslox.Error(expr.keyword, "Cannot use 'super' in static method.");
+            }
+            ResolveLocal(expr, expr.keyword);
+            return Unit.Default;
+        }
+
         public Unit VisitExpressionStmt(Stmt.Expression stmt)
         {
             Resolve(stmt.expression);
@@ -432,9 +453,19 @@ namespace cslox
         public Unit VisitClassDeclStmt(Stmt.ClassDecl stmt)
         {
             var oldClassType = currentClass;
-            currentClass = ClassType.Class;
+            currentClass = stmt.superClass == null ? ClassType.Class : ClassType.Subclass;
             Declare(stmt.name, stmt);
             Define(stmt.name);
+            if (stmt.superClass != null)
+            {
+                if (stmt.superClass.name == stmt.name)
+                {
+                    cslox.Error(stmt.superClass.name, "A class cannot inherit from itself.");
+                }
+                Resolve(stmt.superClass);
+                BeginScope();
+                scopes.Peek()["super"] = new VariableData(stmt){Initialized =  true, Used = true};
+            }
             var instanceMethods = stmt.methods;
             var staticMethods = stmt.staticMethods;
             var getterProperties = stmt.getProperties;
@@ -477,6 +508,10 @@ namespace cslox
                 ResolveFunction(getterProperty, FunctionType.Getter);
             }
             EndScope();
+            if (stmt.superClass != null)
+            {
+                EndScope();
+            }
             currentClass = oldClassType;
             return Unit.Default;
         }

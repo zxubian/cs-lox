@@ -20,6 +20,7 @@ namespace cslox
 			 T VisitGetExpr(Get expr);
 			 T VisitSetExpr(Set expr);
 			 T VisitThisExpr(This expr);
+			 T VisitSuperExpr(Super expr);
 		}
 		public class Assign : Expr
 		{
@@ -182,6 +183,18 @@ namespace cslox
 
 			public readonly Token keyword;
 			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitThisExpr(this);
+		}
+		public class Super : Expr
+		{
+			public Super (Token keyword, Token method)
+			{
+			this.keyword = keyword;
+			this.method = method;
+			}
+
+			public readonly Token keyword;
+			public readonly Token method;
+			public override T Accept<T>(IVisitor<T> visitor) => visitor.VisitSuperExpr(this);
 		}
 
 		public abstract T Accept<T>(IVisitor<T> visitor);

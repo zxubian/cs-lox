@@ -29,7 +29,8 @@ namespace cslox
                 "Lambda: List<Token> parameters, List<Stmt> body",
                 "Get: Expr obj, Token name",
                 "Set: Expr obj, Token name, Expr value",
-                "This: Token keyword"
+                "This: Token keyword",
+                "Super: Token keyword, Token method"
             });
             DefineAst(outputDir, "Stmt", new List<string>
             {
@@ -42,7 +43,7 @@ namespace cslox
                 "While: Expr condition, Stmt body",
                 "Break: Token keyword",
                 "Return: Token keyword, Expr value",
-                "ClassDecl: Token name, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods, List<Stmt.FunctionDecl> getProperties",
+                "ClassDecl: Token name, Expr.Variable superClass, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods, List<Stmt.FunctionDecl> getProperties",
             });
             return 0;
         }

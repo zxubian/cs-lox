@@ -124,15 +124,17 @@ namespace cslox
 		}
 		public class ClassDecl : Stmt
 		{
-			public ClassDecl (Token name, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods, List<Stmt.FunctionDecl> getProperties)
+			public ClassDecl (Token name, Expr.Variable superClass, List<Stmt.FunctionDecl> methods, List<Stmt.FunctionDecl> staticMethods, List<Stmt.FunctionDecl> getProperties)
 			{
 			this.name = name;
+			this.superClass = superClass;
 			this.methods = methods;
 			this.staticMethods = staticMethods;
 			this.getProperties = getProperties;
 			}
 
 			public readonly Token name;
+			public readonly Expr.Variable superClass;
 			public readonly List<Stmt.FunctionDecl> methods;
 			public readonly List<Stmt.FunctionDecl> staticMethods;
 			public readonly List<Stmt.FunctionDecl> getProperties;

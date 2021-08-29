@@ -18,7 +18,7 @@ namespace cslox
         /*
            program        → declaration* EOF ;
            declaration    → classDecl | varDecl | funDecl | statement ;
-           classDecl      → "class" IDENTIFIER "{" staticFunction* getter*"}" ;
+           classDecl      → "class" IDENTIFIER ("<" IDENTIFIER)? "{" staticFunction* getter*"}" ;
            staticFunction → ("class")? function;
            getter         → IDENTIFIER block;
            function       → IDENTIFIER "(" parameters? ")" block;
@@ -57,10 +57,9 @@ namespace cslox
            unary          → ( "!" | "-" ) unary | call ;
            call           → primary ( "(" arguments? ")" | "." IDENTIFIER) *;
            arguments       → assignment ( "," assignment )*;
-           primary        →   "true" | "false" | "nil"
-                          | NUMBER | STRING 
-                          | "(" expression ")" 
-                          | IDENTIFIER ; 
+           primary        →   "true" | "false" | "nil" | "this"
+                          | NUMBER | STRING | IDENTIFIER | "(" expression ")" 
+                          | super '.' IDENTIFIER;
          */
 
         public List<Stmt> Parse()
@@ -100,10 +99,16 @@ namespace cslox
             }
         }
         
-        // classDecl      → "class" IDENTIFIER "{" function* "}" ;
+        //   classDecl      → "class" IDENTIFIER ("<" IDENTIFIER)? "{" staticFunction* getter*"}" ;
         private Stmt ClassDeclaration()
         {
             var identifier = Consume(TokenType.IDENTIFIER, "Class name expected.");
+            Expr.Variable superclass = null;
+            if (Match(TokenType.LESS))
+            {
+                Consume(TokenType.IDENTIFIER, "Expected superclass name after '<'.");
+                superclass = new Expr.Variable(Previous());
+            }
             Consume(TokenType.LEFT_BRACE, "Expected '{' before class body");
             var methods = new List<Stmt.FunctionDecl>();
             var staticMethods = new List<Stmt.FunctionDecl>();
@@ -112,24 +117,25 @@ namespace cslox
             {
                 var isStatic = Match(TokenType.CLASS);
                 var methodName = Consume(TokenType.IDENTIFIER, "Expected name for property or method");
-                if (Check(TokenType.LEFT_PAREN))
+                if (isStatic)
                 {
-                    if (isStatic)
-                    {
-                        staticMethods.Add(Function(methodName, "Static Method"));
-                    }
-                    else
-                    {
-                        methods.Add(Function(methodName, "Method"));
-                    }
+                    Consume(TokenType.LEFT_PAREN, "Expected '(' after static method name.");
+                    staticMethods.Add(Function(methodName, "Static Method"));
                 }
                 else
                 {
-                    getProperties.Add(Getter(methodName));
+                    if (Check(TokenType.LEFT_PAREN))
+                    {
+                            methods.Add(Function(methodName, "Method"));
+                    }
+                    else
+                    {
+                        getProperties.Add(Getter(methodName));
+                    }
                 }
             }
             Consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.");
-            return new Stmt.ClassDecl(identifier, methods, staticMethods, getProperties);
+            return new Stmt.ClassDecl(identifier, superclass, methods, staticMethods, getProperties);
         }
 
         private Stmt.FunctionDecl Getter(Token propertyName)
@@ -589,6 +595,12 @@ namespace cslox
             if(Match(TokenType.THIS))
             {
                 return new Expr.This(Previous());
+            }
+            if (Match(TokenType.SUPER))
+            {
+                var keyword = Previous();
+                Consume(TokenType.DOT, "Expect '.' after 'super'");
+                return new Expr.Super(keyword, Consume(TokenType.IDENTIFIER, "Expected method name after 'super'."));
             }
             throw Error(Peek(), "Expected expression.");
         }
