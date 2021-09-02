@@ -1,18 +1,6 @@
 # cs-lox
 A C# implementation of a Lox interpreter (adapted from jlox, credit to "Crafting Interpreters" ([book](https://craftinginterpreters.com/), [repo](https://github.com/munificent/craftinginterpreters)) by Robert Nystrom)
 
-
-# Chapters Complete:
-- Scanning
-- Representing Code
-- Parsing Expressions
-- Evaluating Expressions
-- Statements and State
-- Functions
-- Resolving and Binding
-- Classes
-- Inheritance
-
 # Language Tweaks
 
 - Language supports nill equality comparison
